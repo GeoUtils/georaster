@@ -559,6 +559,9 @@ class __Raster:
         interp_type=gdal.GRA_NearestNeighbour):
         """
         Reproject and resample dataset into another spatial reference system.
+
+        Use to reproject/resample a dataset in-memory (rather than creating a
+        new file), the function returns a new SingleBand or MultiBandRaster.
         
         Parameters:
             target_srs : Spatial Reference System to reproject to
@@ -572,6 +575,8 @@ class __Raster:
             default is GRA_NearestNeighbour
 
         Returns:
+            A SingleBandRaster or MultiBandRaster object containing the
+            reprojected image (in memory - not saved to file system)
             
 
         """
@@ -596,14 +601,17 @@ class __Raster:
             target_srs.ExportToWkt(), interp_type)
     
         # Load data
+        if self.ds.RasterCount > 1:
+            new_raster = MultiBandRaster(target_ds)
+        else:
+            new_raster = SingleBandRaster(target_ds)
         band = target_ds.GetRasterBand(1)
         data = band.ReadAsArray(0, 0, nx, ny)
+        
+        for b in range(1,new_raster.ds.RasterCount):
+            new_raster.r[new_raster.r==0] = nodata
     
-        # Set nodata points to nodata value
-        if nodata <> None:
-            data[data==0] = nodata
-    
-        return data
+        return new_raster
 
 
 
