@@ -142,14 +142,14 @@ class __Raster:
     # pyproj Projection
     proj = None
     # Raster size
-    self.nx = None
-    self.ny = None
+    nx = None
+    ny = None
     # Pixel size
-    self.xres = None
-    self.yres = None
+    xres = None
+    yres = None
     # Subset offsets in pixels
-    self.x0 = None
-    self.y0 = None
+    x0 = None
+    y0 = None
   
 
 
@@ -686,7 +686,7 @@ class SingleBandRaster(__Raster):
     # Numpy array of band data
     r = None
     # Band datatype
-    self.dtype = None
+    dtype = None
 
 
 
