@@ -201,7 +201,7 @@ class __Raster:
 
     def get_extent_latlon(self):
         """ Return raster extent in lat/lon, (xll,xur,yll,yur) """
-        if self.proj <> None:
+        if self.proj != None:
             left,bottom = self.proj(self.extent[0],self.extent[2],inverse=True)
             right,top = self.proj(self.extent[1],self.extent[3],inverse=True)
             return (left,right,bottom,top)
@@ -230,7 +230,7 @@ class __Raster:
         >>> my_map.imshow(my_im.r,extent=my_im.get_extent_basemap(my_map))
 
         """
-        if self.proj <> None:
+        if self.proj != None:
             xll,xur,yll,yur = self.get_extent_latlon()
         else:
             xll,xur,yll,yur = self.extent
@@ -259,7 +259,7 @@ class __Raster:
 
         # Convert coordinates to map system if provided in lat/lon and image
         # is projected (rather than geographic)
-        if latlon == True and self.proj <> None:
+        if latlon == True and self.proj != None:
             x,y = self.proj(x,y)
 
         # Shift to the centre of the pixel
@@ -412,14 +412,14 @@ class __Raster:
         (c = provided coordinate, v= value of surrounding coordinate)
         """
 
-        if window <> None:
-            if window % 2 <> 1:
+        if window != None:
+            if window % 2 != 1:
                 raise ValueError('Window must be an odd number.')
 
         def format_value(value):
             """ Check if valid value has been extracted """
             if type(value) == np.ndarray:
-                if window <> None:
+                if window != None:
                     value = nanmean(value.flatten())
                 else:
                     value = value[0,0]
@@ -435,7 +435,7 @@ class __Raster:
         # Convert coordinates to pixel space
         xpx,ypx = self.coord_to_px(x,y,latlon=latlon)
         # Decide what pixel coordinates to read:
-        if window <> None:
+        if window != None:
             half_win = (window -1) / 2
             # Subtract start coordinates back to top left of window
             xpx = xpx - half_win
@@ -591,7 +591,7 @@ class __Raster:
         target_ds.SetProjection(target_srs.ExportToWkt())
     
         # Set the nodata value
-        if nodata <> None:
+        if nodata != None:
             for b in range(1,self.ds.RasterCount+1):
                 inBand = self.ds.GetRasterBand(b)
                 inBand.SetNoDataValue(nodata)
@@ -839,7 +839,7 @@ class MultiBandRaster(__Raster):
         """
         self._load_ds(ds_filename)
 
-        if load_data <> False:
+        if load_data != False:
 
             # First check which bands to load
             if bands == 'all':
@@ -942,7 +942,7 @@ def simple_write_geotiff(outfile,raster,geoTransform,
     """
 
     # Georeferencing sanity checks
-    if wkt <> None and proj4 <> None:
+    if wkt != None and proj4 != None:
         raise 'InputError: Both wkt and proj4 specified. Only specify one.'
     if wkt == None and proj4 == None:
         raise 'InputError: One of wkt or proj4 need to be specified.'
@@ -969,9 +969,9 @@ def simple_write_geotiff(outfile,raster,geoTransform,
       
     # Set the reference info 
     srs = osr.SpatialReference()
-    if wkt <> None:
+    if wkt != None:
         dst_ds.SetProjection(wkt)
-    elif proj4 <> None:
+    elif proj4 != None:
         srs.ImportFromProj4(proj4)
         dst_ds.SetProjection( srs.ExportToWkt() )
     
@@ -979,12 +979,12 @@ def simple_write_geotiff(outfile,raster,geoTransform,
     if nbands > 1:
         for band in range(1,nbands+1):
             dst_ds.GetRasterBand(band).WriteArray(raster[band-1]) 
-            if mask <> None:
+            if mask != None:
                 dst_ds.GetRasterBand(band).GetMaskBand().WriteArray(mask)
     else:
         dst_ds.GetRasterBand(1).WriteArray(raster)
         dst_ds.GetRasterBand(1).SetNoDataValue(-999)
-        if mask <> None:
+        if mask != None:
             dst_ds.GetRasterBand(1).GetMaskBand().WriteArray(mask)
 
     if outfile != 'none':
