@@ -67,7 +67,7 @@ Or in image projection system:
 SingleBandRaster to get some georeferencing info, without 
 also loading data into memory:
 >>> my_image = georaster.SingleBandRaster('myfile.tif',load_data=False)
->>> print my_image.srs.GetProjParm('central_meridian')
+>>> print(my_image.srs.GetProjParm('central_meridian'))
 
 MultiBandRaster, loading all bands:
 >>> my_image = georaster.MultiBandRaster('myfile.tif')
@@ -291,7 +291,7 @@ class __Raster:
         yPixel_new = np.fmax(yPixel_new,0)
         
         if np.any(xPixel_new!=xPixel) or np.any(yPixel_new!=yPixel):
-            print "Warning : some points are out of domain for file %s" %(self.ds_file)
+            print("Warning : some points are out of domain for file")
 
         return xPixel_new, yPixel_new
 
@@ -501,7 +501,7 @@ class __Raster:
         """
         
         if np.size(Xpixels) != np.size(Ypixels):
-            print "Xpixels and Ypixels must have the same size"
+            print("Xpixels and Ypixels must have the same size")
             return 1
 
         if (Xpixels==None) & (Ypixels==None):
@@ -707,6 +707,10 @@ class SingleBandRaster(__Raster):
             
         """
         self._load_ds(ds_filename)     
+
+        # Import band datatype
+        band = self.ds.GetRasterBand(1)
+        self.dtype = gdal.GetDataTypeName(band.DataType)
         
         # Load entire image
         if load_data == True:
@@ -718,15 +722,11 @@ class SingleBandRaster(__Raster):
                 (self.r,self.extent) = self.read_single_band_subset(load_data,
                                         latlon=latlon,extent=True,band=band)
 
-        # Load band datatype
-        band = self.ds.GetRasterBand(1)
-        self.dtype = gdal.GetDataTypeName(band.DataType)
-
         elif load_data == False:
             return
 
         else:
-            print 'Warning : load_data argument not understood. No data loaded.'
+            print('Warning : load_data argument not understood. No data loaded.')
 
    
         
@@ -848,7 +848,7 @@ class MultiBandRaster(__Raster):
                 if isinstance(bands,tuple):
                     self.bands = bands
                 else:
-                    print 'bands is not "all" or tuple'
+                    print('bands is not str "all" or of type tuple')
                     raise ValueError
 
             # Loading whole dimensions of raster
