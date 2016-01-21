@@ -299,6 +299,7 @@ class __Raster:
 
     def read_single_band(self,band=1):
         """ Return np array of specified band, defaults to band 1. """
+        band = int(band)
         return self.ds.GetRasterBand(band).ReadAsArray()  
 
 
@@ -709,8 +710,8 @@ class SingleBandRaster(__Raster):
         self._load_ds(ds_filename)     
 
         # Import band datatype
-        band = self.ds.GetRasterBand(1)
-        self.dtype = gdal.GetDataTypeName(band.DataType)
+        band_tmp = self.ds.GetRasterBand(band)
+        self.dtype = gdal.GetDataTypeName(band_tmp.DataType)
         
         # Load entire image
         if load_data == True:
