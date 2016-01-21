@@ -93,9 +93,6 @@ import numpy as np
 from scipy import ndimage
 from scipy.stats import nanmean
 from osgeo import osr, gdal
-import subprocess
-import xml.etree.ElementTree as etree
-import re
 import mpl_toolkits.basemap.pyproj as pyproj
 
 # By default, GDAL does not raise exceptions - enable them
