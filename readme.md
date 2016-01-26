@@ -11,22 +11,22 @@ There are two basic types of raster: either a single-band dataset, which you loa
 
 Before doing anything you must import the package.
 
->>> import georaster
+    import georaster
 
 The examples below also require matplotlib:
 
->>> import matplotlib.pyplot as plt
+    import matplotlib.pyplot as plt
 
 
 ## Load a GeoTIFF with a single band of data ##
 
 Load the image with a single command:
 
->>> my_image = georaster.SingleBandRaster('myfile.tif')
+    my_image = georaster.SingleBandRaster('myfile.tif')
 
 The single data band is loaded into the `r` attribute of `my_image`. Use the `extent` attribute of the `my_image` object to set the coordinates of the plotted image:
 
->>> plt.imshow(my_image.r,extent=my_image.extent)
+    plt.imshow(my_image.r,extent=my_image.extent)
 
 
 ## Single band of data, loading a subset area of the image ##
@@ -34,11 +34,11 @@ The single data band is loaded into the `r` attribute of `my_image`. Use the `ex
 In lat/lon (WGS84) - note that this will also set the class georeferencing 
 information to match (i.e. self.nx, .yx, .extent, .xoffset, .yoffset):
 
->>> my_image = georaster.SingleBandRaster('myfile.tif',load_data=(lonll,lonur,latll,latur),latlon=True)
+    my_image = georaster.SingleBandRaster('myfile.tif',load_data=(lonll,lonur,latll,latur),latlon=True)
 
 Or in projection system of the image:
 
->>> my_image = georaster.SingleBandRaster('myfile.tif',load_data=
+    my_image = georaster.SingleBandRaster('myfile.tif',load_data=
                                             (xstart,xend,ystart,yend),
                                             latlon=False)
 
@@ -46,8 +46,8 @@ Or in projection system of the image:
 ## Just get the georeferencing info, without also loading data into memory ##
 Each class works as a wrapper to the GDAL API. A raster dataset can be loaded without needing to load the actual data as well, which is useful for querying geo-referencing information without memory overheads. Simply set the `load_data` flag to `False`:
 
->>> my_image = georaster.SingleBandRaster('myfile.tif',load_data=False)
->>> print(my_image.srs.GetProjParm('central_meridian'))
+    my_image = georaster.SingleBandRaster('myfile.tif',load_data=False)
+    print(my_image.srs.GetProjParm('central_meridian'))
 
 (See the 'Accessing geo-referencing information' section below for informtation on `srs`)
 
@@ -55,19 +55,19 @@ Each class works as a wrapper to the GDAL API. A raster dataset can be loaded wi
 ## Raster dataset with multiple bands, load just one band ##
 For example, load GDAL band 2:
 
->>> my_image = georaster.MultiBandRaster('myfile.tif',band=2)
+    my_image = georaster.MultiBandRaster('myfile.tif',band=2)
 
 
 ## Raster dataset with multiple bands, loading all bands ##
 
->>> my_image = georaster.MultiBandRaster('myfile.tif')
->>> plt.imshow(my_image.r)
+    my_image = georaster.MultiBandRaster('myfile.tif')
+    plt.imshow(my_image.r)
 
 
 ## Raster dataset with multiple bands, loading just a couple of them ##
 
->>> my_image = georaster.MultiBandRaster('myfile.tif',bands=[1,3])
->>> plt.imshow(my_image.r[:,:,my_image.gdal_band(3)])
+    my_image = georaster.MultiBandRaster('myfile.tif',bands=[1,3])
+    plt.imshow(my_image.r[:,:,my_image.gdal_band(3)])
 
 
 # Accessing and using geo-referencing information #
