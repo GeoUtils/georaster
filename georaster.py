@@ -718,7 +718,7 @@ class SingleBandRaster(__Raster):
         elif isinstance(load_data,tuple) or isinstance(load_data,list):
             if len(load_data) == 4:
                 (self.r,self.extent) = self.read_single_band_subset(load_data,
-                                        latlon=latlon,extent=True,band=band)
+                                        latlon=latlon,extent=True,band=band,update_info=True)
 
         elif load_data == False:
             return
@@ -866,7 +866,7 @@ class MultiBandRaster(__Raster):
                         # If first band, create a storage object
                         if self.r == None:
                             (tmp,self.extent) = self.read_single_band_subset(load_data,
-                                        latlon=latlon,extent=True,band=b)
+                                        latlon=latlon,extent=True,band=b,update_info=True)
                             self.r = np.zeros((tmp.shape[0],tmp.shape[1],
                                len(self.bands)))
                             self.r[:,:,k] = tmp
