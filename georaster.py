@@ -603,7 +603,7 @@ class __Raster:
 
     def reproject(self,target_srs,nx,ny,xmin,ymax,xres,yres,
         dtype=gdal.GDT_Float32,nodata=None,
-        interp_type=gdal.GRA_NearestNeighbour):
+                  interp_type=gdal.GRA_NearestNeighbour,progress=False):
         """
         Reproject and resample dataset into another spatial reference system.
 
@@ -624,6 +624,7 @@ class __Raster:
             interp_type : gdal.GRA_* interpolation algorithm 
             (e.g GRA_NearestNeighbour, GRA_Bilinear, GRA_CubicSpline...), 
             default is GRA_NearestNeighbour
+            progress : bool, set to True to display a progress bar
 
         Returns:
             A SingleBandRaster or MultiBandRaster object containing the
@@ -648,8 +649,12 @@ class __Raster:
                 inBand.SetNoDataValue(nodata)
     
         # Perform the projection/resampling 
-        res = gdal.ReprojectImage(self.ds, target_ds, self.srs.ExportToWkt(), 
-            target_srs.ExportToWkt(), interp_type)
+        if progress==True:
+            res = gdal.ReprojectImage(self.ds, target_ds, None, None, 
+                                      interp_type, 0.0, 0.0, gdal.TermProgress)
+        else:
+            res = gdal.ReprojectImage(self.ds, target_ds, None, None, 
+                                      interp_type, 0.0, 0.0, None)
     
         # Load data
         if self.ds.RasterCount > 1:
