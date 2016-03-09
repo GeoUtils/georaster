@@ -6,6 +6,8 @@ GeoRaster is compatible with Python 2.4-3.x. It requires GDAL and its Python bin
 
 There are two basic types of raster: either a single-band dataset, which you load into a `SingleBandRaster` object, or a dataset containing multiple bands to be loaded, which you load into a `MultiBandRaster` object.
 
+There is also an 'advanced' option where you can load a raster dataset, manually specifying your geo-referencing information. See example below.
+
 
 # Examples #
 
@@ -68,6 +70,17 @@ For example, load GDAL band 2:
 
     my_image = georaster.MultiBandRaster('myfile.tif',bands=[1,3])
     plt.imshow(my_image.r[:,:,my_image.gdal_band(3)])
+
+
+## Load dataset, providing your own geo-referencing ##
+
+    from osgeo import osr
+    spatial_ref = osr.SpatialReference()
+    # This georef example is from http://nsidc.org/data/docs/daac/nsidc0092_greenland_ice_thickness.gd.html
+    spatial_ref.ImportFromProj4('+proj=stere +lat_0=90 +lat_ts=71 +lon_0=-39 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs')    
+    my_image = georaster.SingleBandRaster('myfile.tif',
+                geo_transform=(-800000,5000,0,-600000,0,-5000),
+                spatial_ref=ref)
 
 
 # Accessing and using geo-referencing information #

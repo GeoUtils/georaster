@@ -23,6 +23,9 @@ the following attributes:
                     all GDAL functions, e.g. GetProjection, GetGeoTransform.
                         More information on API:
                         http://www.gdal.org/classGDALDataset.html
+                    Remember that this is useless if you have provided your
+                    own geo-referencing information via the geo_transform and
+                    spatial_srs arguments!
 
     class.srs   :   an OGR Spatial Reference object representation of the 
                     dataset.
@@ -76,6 +79,14 @@ MultiBandRaster, loading all bands:
 MultiBandRaster, loading just a couple of bands:
 >>> my_image = georaster.MultiBandRaster('myfile.tif',bands=[1,3])
 >>> plt.imshow(my_image.r[:,:,my_image.gdal_band(3)])
+
+Override georeferencing provided with file (either Single or MultiBand):
+>>> from osgeo import osr
+>>> ref = osr.SpatialReference()
+>>> ref.ImportFromProj4('your proj4 string, e.g. +proj=stere ...')
+>>> my_image = georaster.SingleBandRaster('myfile.tif',
+                geo_transform=(160,5000,0,-120,0,-5000),
+                spatial_ref=ref)
 
 For more georaster examples see the docstrings which accompany each function.
 
@@ -132,6 +143,8 @@ class __Raster:
     ds_file = None
     # GDAL handle to the dataset
     ds = None
+    # GeoTransform 
+    trans = None
     # Extent of raster in order understood by Basemap
     extent = None
     # SRS
@@ -156,8 +169,19 @@ class __Raster:
 
 
 
-    def _load_ds(self,ds_filename):
-        """ Load link to data file and set up georeferencing """
+    def _load_ds(self,ds_filename,spatial_ref=None,geo_transform=None):
+        """ Load link to data file and set up georeferencing 
+
+        Parameters:
+            ds_filename : string, path to file
+
+            To use file georeferencing, leave spatial_ref and geo_transform 
+            set as None. To explicitly specify georeferencing:
+                spatial_ref : OSR SpatialReference instance
+                geo_transform : geo-transform tuple
+
+        """
+
         # Load dataset from a file
         if isinstance(ds_filename,str):  
             self.ds_file = ds_filename
@@ -167,31 +191,56 @@ class __Raster:
             self.ds = ds_filename
             self.ds_file = ds_filename.GetDescription()
 
-        if self.ds.GetProjection() == '':
+        # Check that some georeferencing information is available
+        if self.ds.GetProjection() == '' and spatial_ref == None:
             print('Specified image does not have any associated \
-            georeferencing information.')
+            georeferencing information. (You can provide some using the \
+            spatial_ref and geo_transform arguments.)')
             raise RuntimeError
 
-        trans = self.ds.GetGeoTransform()
-        self.extent = (trans[0], trans[0] + self.ds.RasterXSize*trans[1], 
-                       trans[3] + self.ds.RasterYSize*trans[5], trans[3])
+        # If user attempting to use their own georeferencing then make sure
+        # that they have provided both required arguments
+        if (spatial_ref == None and geo_transform != None) or \
+           (spatial_ref != None and geo_transform == None):
+            print('You must set both spatial_ref and geo_transform.')
+            raise RuntimeError
 
-        #Pixel size
-        self.xres = trans[1]
-        self.yres = trans[5]
 
-        #Raster size
+        ## Start to load the geo-referencing ...
+
+        if spatial_ref == None:
+            # Use the georeferencing of the file
+            self.trans = self.ds.GetGeoTransform()
+            # Spatial Reference System
+            self.srs = osr.SpatialReference()
+            self.srs.ImportFromWkt(self.ds.GetProjection())
+        else:
+            # Set up georeferencing using user-provided information
+            # GeoTransform
+            self.trans = geo_transform
+            # Spatial Reference System
+            self.srs = spatial_ref
+            
+        # Create extent tuple in native dataset coordinates
+        self.extent = (self.trans[0], 
+                       self.trans[0] + self.ds.RasterXSize*self.trans[1], 
+                       self.trans[3] + self.ds.RasterYSize*self.trans[5], 
+                       self.trans[3])
+
+        # Pixel size
+        self.xres = self.trans[1]
+        self.yres = self.trans[5]
+
+        # Raster size
         self.nx = self.ds.RasterXSize
         self.ny = self.ds.RasterYSize
         
-        #Offset of the first pixel (non-zero if only subset is read)
+        # Offset of the first pixel (non-zero if only subset is read)
         self.x0 = 0
-        self.y0 = 0
+        self.y0 = 0            
 
-        self.srs = osr.SpatialReference()
-        self.srs.ImportFromWkt(self.ds.GetProjection())
-
-        if len(self.ds.GetProjection().split('PROJCS')) == 2:
+        # Load projection if there is one
+        if self.srs.IsProjected():
             self.proj = pyproj.Proj(self.srs.ExportToProj4())
  
 
@@ -263,7 +312,7 @@ class __Raster:
         x = np.array(x-self.xres/2)
         y = np.array(y-self.yres/2)
 
-        g0, g1, g2, g3, g4, g5 = self.ds.GetGeoTransform()
+        g0, g1, g2, g3, g4, g5 = self.trans
         if g2 == 0:
             xPixel = (x - g0) / float(g1)
             yPixel = (y - g3 - xPixel*g4) / float(g5)
@@ -351,7 +400,7 @@ class __Raster:
 
         # Update image size
         # (top left x, w-e px res, 0, top left y, 0, n-s px res)
-        trans = self.ds.GetGeoTransform() 
+        trans = self.trans
         left = trans[0] + xpx1*trans[1]
         top = trans[3] + ypx1*trans[5]
         subset_extent = (left, left + x_offset*trans[1], 
@@ -512,7 +561,7 @@ class __Raster:
             
         # + self.x0 is for offset if only a subset ahas been read
         # coordinates are at centre-cell, therefore the +0.5
-        trans = self.ds.GetGeoTransform()
+        trans = self.trans
         Xgeo = trans[0] + (Xpixels+self.x0+0.5)*trans[1] + (Ypixels+self.y0+0.5)*trans[2]
         Ygeo = trans[3] + (Xpixels+self.x0+0.5)*trans[4] + (Ypixels+self.y0+0.5)*trans[5]
 
@@ -560,6 +609,10 @@ class __Raster:
 
         Use to reproject/resample a dataset in-memory (rather than creating a
         new file), the function returns a new SingleBand or MultiBandRaster.
+
+        CAUTION : not tested to work with datasets where you have provided
+        georeferencing information manually by providing geo_transform and 
+        spatial_ref when creating your georaster instance.
         
         Parameters:
             target_srs : Spatial Reference System to reproject to
@@ -689,7 +742,8 @@ class SingleBandRaster(__Raster):
 
 
      
-    def __init__(self,ds_filename,load_data=True,latlon=True,band=1):
+    def __init__(self,ds_filename,load_data=True,latlon=True,band=1,
+        spatial_ref=None,geo_transform=None):
         """ Construct object with raster from a single band dataset. 
         
         Parameters:
@@ -702,9 +756,20 @@ class SingleBandRaster(__Raster):
                      if tuple is projected coordinates, True if WGS84.
             band : default 1. Specify GDAL band number to load. If you want to
                    load multiple bands at once use MultiBandRaster instead.
+
+            Optionally, you can manually specify/override the georeferencing. 
+            To do this you must set both of the following parameters:
+
+            spatial_ref : a OSR SpatialReference instance
+            geo_transform : a Geographic Transform tuple of the form 
+                            (top left x, w-e cell size, 0, top left y, 0, 
+                             n-s cell size (-ve))
             
         """
-        self._load_ds(ds_filename)     
+
+        # Do basic dataset loading - set up georeferencing
+        self._load_ds(ds_filename,spatial_ref=spatial_ref,
+                      geo_transform=geo_transform)
 
         # Import band datatype
         band_tmp = self.ds.GetRasterBand(band)
@@ -822,7 +887,8 @@ class MultiBandRaster(__Raster):
     bands = None
 
 
-    def __init__(self,ds_filename,load_data=True,bands='all',latlon=True):
+    def __init__(self,ds_filename,load_data=True,bands='all',latlon=True,
+                 spatial_ref=None,geo_transform=None):
         """ Load a multi-band raster.
 
         Parameters:
@@ -834,8 +900,18 @@ class MultiBandRaster(__Raster):
                 MultiBandRaster.r will be a numpy array [y,x,b], where bands
                 are indexed from 0 to n in the order specified in the tuple.
 
+            Optionally, you can manually specify/override the georeferencing. 
+            To do this you must set both of the following parameters:
+
+            spatial_ref : a OSR SpatialReference instance
+            geo_transform : a Geographic Transform tuple of the form 
+                            (top left x, w-e cell size, 0, top left y, 0, 
+                             n-s cell size (-ve))
+
         """
-        self._load_ds(ds_filename)
+
+        self._load_ds(ds_filename,spatial_ref=spatial_ref,
+                      geo_transform=geo_transform)
 
         if load_data != False:
 
@@ -887,7 +963,7 @@ class MultiBandRaster(__Raster):
 
 
 
-    def gdal_band(b):
+    def gdal_band(self,b):
         """ Return numpy array location index for given GDAL band number. 
 
         Parameters:
