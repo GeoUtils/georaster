@@ -343,15 +343,28 @@ class __Raster:
 
 
 
-    def read_single_band(self,band=1):
-        """ Return np array of specified band, defaults to band 1. """
+    def read_single_band(self,band=1,downsampl=1):
+        """ 
+        Return np array of specified band, defaults to band 1. 
+        downsampl is used to reduce the size of the image loaded. Default is 1, no down-sampling.
+        """
         band = int(band)
         return self.ds.GetRasterBand(band).ReadAsArray()  
 
+        if downsampl==1:
+            return self.ds.GetRasterBand(band).ReadAsArray()  
+        else:
+            arr=self.ds.GetRasterBand(band).ReadAsArray(buf_xsize=int(self.nx/downsampl), buf_ysize=int(self.ny/downsampl))
+            self.nx = int(self.nx/downsampl)
+            self.ny = int(self.ny/downsampl)
+            self.xres = self.xres*downsampl
+            self.yres = self.yres*downsampl
+            return arr
+            
 
 
     def read_single_band_subset(self,bounds,latlon=False,extent=False,band=1,
-        update_info=False):
+                                update_info=False,downsampl=1):
         """ Return a subset area of the specified band of the dataset.
 
         Supply coordinates in native system or lat/lon.
@@ -395,8 +408,11 @@ class __Raster:
         if y_offset == 0: y_offset = 1
 
         # Read array and return
-        arr = self.ds.GetRasterBand(band).ReadAsArray(int(xpx1),int(ypx1),
-                                                      int(x_offset),int(y_offset))
+        if downsampl==1:
+            arr = self.ds.GetRasterBand(band).ReadAsArray(int(xpx1),int(ypx1),
+                                                          int(x_offset),int(y_offset))
+        else:
+            arr = self.ds.GetRasterBand(band).ReadAsArray(int(xpx1),int(ypx1),int(x_offset),int(y_offset),buf_xsize=int(x_offset/downsampl),buf_ysize=int(y_offset/downsampl))
 
         # Update image size
         # (top left x, w-e px res, 0, top left y, 0, n-s px res)
@@ -410,6 +426,8 @@ class __Raster:
             self.x0 = int(xpx1)
             self.y0 = int(ypx1)
             self.extent = subset_extent
+            self.xres = self.xres*downsampl
+            self.yres = self.yres*downsampl
         if extent == True:
             return (arr,subset_extent)
         else:
@@ -747,8 +765,10 @@ class SingleBandRaster(__Raster):
 
 
      
+
+
     def __init__(self,ds_filename,load_data=True,latlon=True,band=1,
-        spatial_ref=None,geo_transform=None):
+        spatial_ref=None,geo_transform=None,downsampl=1):
         """ Construct object with raster from a single band dataset. 
         
         Parameters:
@@ -761,6 +781,7 @@ class SingleBandRaster(__Raster):
                      if tuple is projected coordinates, True if WGS84.
             band : default 1. Specify GDAL band number to load. If you want to
                    load multiple bands at once use MultiBandRaster instead.
+            downsampl : default 1. Used to down-sample the image when loading it. A value of 2 for example will multiply the resolution by 2. 
 
             Optionally, you can manually specify/override the georeferencing. 
             To do this you must set both of the following parameters:
@@ -782,13 +803,13 @@ class SingleBandRaster(__Raster):
         
         # Load entire image
         if load_data == True:
-            self.r = self.read_single_band(band)
+            self.r = self.read_single_band(band,downsampl=downsampl)
 
         # Or load just a subset region
         elif isinstance(load_data,tuple) or isinstance(load_data,list):
             if len(load_data) == 4:
                 (self.r,self.extent) = self.read_single_band_subset(load_data,
-                                        latlon=latlon,extent=True,band=band,update_info=True)
+                                                                    latlon=latlon,extent=True,band=band,update_info=True,downsampl=downsampl)
 
         elif load_data == False:
             return
