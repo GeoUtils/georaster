@@ -349,7 +349,6 @@ class __Raster:
         downsampl is used to reduce the size of the image loaded. Default is 1, no down-sampling.
         """
         band = int(band)
-        return self.ds.GetRasterBand(band).ReadAsArray()  
 
         if downsampl==1:
             return self.ds.GetRasterBand(band).ReadAsArray()  
