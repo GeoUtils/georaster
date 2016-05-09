@@ -38,6 +38,8 @@ the following attributes:
     class.extent :  tuple of the corners of the dataset in native coordinate
                     system, as (left,right,bottom,top).
 
+    class.trans : GeoTransform tuple of the dataset.
+
 Additionally, georeferencing information which requires calculation 
 can be accessed via a number of functions available in the class.
 
@@ -119,7 +121,8 @@ Ygeo = g3 + Xpixel*g4 + Ypixel*g5
 where g = ds.GetGeoTransform()
 given on http://www.gdal.org/gdal_datamodel.html
 
-(Xgeo, Ygeo) is the position of the upper-left corner of the cell, so the cell center is located at position (Xpixel+0.5,Ypixel+0.5)
+(Xgeo, Ygeo) is the position of the upper-left corner of the cell, so the 
+cell center is located at position (Xpixel+0.5,Ypixel+0.5)
 """
 
 class __Raster:
@@ -415,7 +418,7 @@ class __Raster:
 
         # Update image size
         # (top left x, w-e px res, 0, top left y, 0, n-s px res)
-        trans = self.trans
+        trans = self.ds.GetGeoTransform()
         left = trans[0] + xpx1*trans[1]
         top = trans[3] + ypx1*trans[5]
         subset_extent = (left, left + x_offset*trans[1], 
@@ -427,6 +430,7 @@ class __Raster:
             self.extent = subset_extent
             self.xres = self.xres*downsampl
             self.yres = self.yres*downsampl
+            self.trans = (left, trans[1], 0, top, 0, trans[5])
         if extent == True:
             return (arr,subset_extent)
         else:
@@ -554,6 +558,7 @@ class __Raster:
         if Xpixels=None and Ypixels=None (default), a grid with all 
         coordinates is returned
         if latlon=True, return the lat/lon coordinates
+        Coordinates returned are for cell centres.
 
         Parameters:
             Xpixels : float or array, x-index of the pixels
@@ -735,6 +740,29 @@ class __Raster:
 
 
 
+    def save_geotiff(self,filename, dtype=gdal.GDT_Float32):
+        """
+        Save a GeoTIFF of the raster currently loaded.
+
+        Georeferenced and subset according to the current raster.
+
+        Inputs:
+            filename : the path and filename to save the file to.
+            dtype : GDAL datatype, defaults to Float32.
+
+        Returns:
+            True on success.
+
+        """
+
+        if self.r is None:
+            raise ValueError('There are no image data loaded. No file can be created.')
+
+        simple_write_geotiff(filename, self.r, self.trans, 
+            wkt=self.srs.ExportToWkt(), dtype=dtype)
+
+
+
 
 class SingleBandRaster(__Raster):
     """ A geographic raster dataset with one band of data.
@@ -807,8 +835,8 @@ class SingleBandRaster(__Raster):
         # Or load just a subset region
         elif isinstance(load_data,tuple) or isinstance(load_data,list):
             if len(load_data) == 4:
-                (self.r,self.extent) = self.read_single_band_subset(load_data,
-                                                                    latlon=latlon,extent=True,band=band,update_info=True,downsampl=downsampl)
+                self.r = self.read_single_band_subset(load_data,latlon=latlon,
+                    band=band,update_info=True,downsampl=downsampl)
 
         elif load_data == False:
             return
