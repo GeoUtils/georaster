@@ -106,7 +106,10 @@ import numpy as np
 from scipy import ndimage
 from scipy.stats import nanmean
 from osgeo import osr, gdal
-import mpl_toolkits.basemap.pyproj as pyproj
+try:
+    import pyproj
+except ImportError:
+    import mpl_toolkits.basemap.pyproj as pyproj
 
 # By default, GDAL does not raise exceptions - enable them
 # See http://trac.osgeo.org/gdal/wiki/PythonGotchas
@@ -148,7 +151,7 @@ class __Raster:
     ds = None
     # GeoTransform 
     trans = None
-    # Extent of raster in order understood by Basemap
+    #: Extent of raster in order understood by Basemap, (xll,xur,yll,yur)
     extent = None
     # SRS
     srs = None
