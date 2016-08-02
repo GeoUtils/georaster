@@ -584,11 +584,10 @@ class __Raster:
             Xpixels = np.array(Xpixels)
             Ypixels = np.array(Ypixels)
             
-        # + self.x0 is for offset if only a subset ahas been read
         # coordinates are at centre-cell, therefore the +0.5
         trans = self.trans
-        Xgeo = trans[0] + (Xpixels+self.x0+0.5)*trans[1] + (Ypixels+self.y0+0.5)*trans[2]
-        Ygeo = trans[3] + (Xpixels+self.x0+0.5)*trans[4] + (Ypixels+self.y0+0.5)*trans[5]
+        Xgeo = trans[0] + (Xpixels+0.5)*trans[1] + (Ypixels+0.5)*trans[2]
+        Ygeo = trans[3] + (Xpixels+0.5)*trans[4] + (Ypixels+0.5)*trans[5]
 
         if latlon==True:
             Xgeo, Ygeo = self.proj(Xgeo,Ygeo,inverse=True)
