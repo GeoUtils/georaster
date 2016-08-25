@@ -114,6 +114,7 @@ except ImportError:
 # By default, GDAL does not raise exceptions - enable them
 # See http://trac.osgeo.org/gdal/wiki/PythonGotchas
 gdal.UseExceptions()
+from warnings import warn
 
 """
 Information on map -> pixel conversion
@@ -199,10 +200,7 @@ class __Raster:
 
         # Check that some georeferencing information is available
         if self.ds.GetProjection() == '' and spatial_ref == None:
-            print('Specified image does not have any associated \
-            georeferencing information. (You can provide some using the \
-            spatial_ref and geo_transform arguments.)')
-            raise RuntimeError
+            warn('Warning : No georeferencing information associated to image!')
 
         # If user attempting to use their own georeferencing then make sure
         # that they have provided both required arguments
