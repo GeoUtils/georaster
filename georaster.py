@@ -104,7 +104,10 @@ Change history prior to 2016/01/19 is in atedstone/geoutils repo.
 
 import numpy as np
 from scipy import ndimage
-from scipy.stats import nanmean
+try:
+    from scipy.stats import nanmean
+except ImportError:
+    from numpy import nanmean
 from osgeo import osr, gdal
 try:
     import pyproj
@@ -764,6 +767,13 @@ class __Raster:
         simple_write_geotiff(filename, self.r, self.trans, 
             wkt=self.srs.ExportToWkt(), dtype=dtype)
 
+
+
+    def cartopy_proj(self):
+        """ Return Cartopy Coordinate System for raster """
+        import cartopy.crs as ccrs
+        class cg(cartopy.crs.CRS): pass
+        return cg(self.srs.ExportToProj4())
 
 
 
