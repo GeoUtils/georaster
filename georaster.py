@@ -117,6 +117,7 @@ except ImportError:
 # By default, GDAL does not raise exceptions - enable them
 # See http://trac.osgeo.org/gdal/wiki/PythonGotchas
 gdal.UseExceptions()
+from warnings import warn
 
 """
 Information on map -> pixel conversion
@@ -202,10 +203,7 @@ class __Raster:
 
         # Check that some georeferencing information is available
         if self.ds.GetProjection() == '' and spatial_ref == None:
-            print('Specified image does not have any associated \
-            georeferencing information. (You can provide some using the \
-            spatial_ref and geo_transform arguments.)')
-            raise RuntimeError
+            warn('Warning : No georeferencing information associated to image!')
 
         # If user attempting to use their own georeferencing then make sure
         # that they have provided both required arguments
@@ -587,11 +585,10 @@ class __Raster:
             Xpixels = np.array(Xpixels)
             Ypixels = np.array(Ypixels)
             
-        # + self.x0 is for offset if only a subset ahas been read
         # coordinates are at centre-cell, therefore the +0.5
         trans = self.trans
-        Xgeo = trans[0] + (Xpixels+self.x0+0.5)*trans[1] + (Ypixels+self.y0+0.5)*trans[2]
-        Ygeo = trans[3] + (Xpixels+self.x0+0.5)*trans[4] + (Ypixels+self.y0+0.5)*trans[5]
+        Xgeo = trans[0] + (Xpixels+0.5)*trans[1] + (Ypixels+0.5)*trans[2]
+        Ygeo = trans[3] + (Xpixels+0.5)*trans[4] + (Ypixels+0.5)*trans[5]
 
         if latlon==True:
             Xgeo, Ygeo = self.proj(Xgeo,Ygeo,inverse=True)
