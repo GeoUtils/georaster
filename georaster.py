@@ -351,16 +351,24 @@ class __Raster:
 
 
     def read_single_band(self,band=1,downsampl=1):
-        """ 
-        Return np array of specified band, defaults to band 1. 
-        downsampl is used to reduce the size of the image loaded. Default is 1, no down-sampling.
+        """ Return np array of specified band, defaults to band 1. 
+
+        Parameters:
+            band : int, number of band to read. Default 1.
+            downsampl: int. Used to reduce the size of the image loaded. 
+                Default is 1 (i.e. no down-sampling)
+        Returns:
+            np.array of specified band
+
         """
         band = int(band)
 
-        if downsampl==1:
+        if downsampl == 1:
             return self.ds.GetRasterBand(band).ReadAsArray()  
         else:
-            arr=self.ds.GetRasterBand(band).ReadAsArray(buf_xsize=int(self.nx/downsampl), buf_ysize=int(self.ny/downsampl))
+            arr = self.ds.GetRasterBand(band).ReadAsArray(
+                buf_xsize=int(self.nx/downsampl), 
+                buf_ysize=int(self.ny/downsampl))
             self.nx = int(self.nx/downsampl)
             self.ny = int(self.ny/downsampl)
             self.xres = self.xres*downsampl
@@ -415,10 +423,19 @@ class __Raster:
 
         # Read array and return
         if downsampl==1:
-            arr = self.ds.GetRasterBand(band).ReadAsArray(int(xpx1),int(ypx1),
-                                                          int(x_offset),int(y_offset))
+            arr = self.ds.GetRasterBand(band).ReadAsArray(
+                int(xpx1),
+                int(ypx1),
+                int(x_offset),
+                int(y_offset))
         else:
-            arr = self.ds.GetRasterBand(band).ReadAsArray(int(xpx1),int(ypx1),int(x_offset),int(y_offset),buf_xsize=int(x_offset/downsampl),buf_ysize=int(y_offset/downsampl))
+            arr = self.ds.GetRasterBand(band).ReadAsArray(
+                int(xpx1),
+                int(ypx1),
+                int(x_offset),
+                int(y_offset),
+                buf_xsize=int(x_offset/downsampl),
+                buf_ysize=int(y_offset/downsampl))
 
         # Update image size
         # (top left x, w-e px res, 0, top left y, 0, n-s px res)
@@ -627,8 +644,8 @@ class __Raster:
 
 
     def reproject(self,target_srs,nx,ny,xmin,ymax,xres,yres,
-        dtype=gdal.GDT_Float32,nodata=None,
-                  interp_type=gdal.GRA_NearestNeighbour,progress=False):
+            dtype=gdal.GDT_Float32,nodata=None,
+            interp_type=gdal.GRA_NearestNeighbour,progress=False):
         """
         Reproject and resample dataset into another spatial reference system.
 
@@ -818,7 +835,8 @@ class SingleBandRaster(__Raster):
                      if tuple is projected coordinates, True if WGS84.
             band : default 1. Specify GDAL band number to load. If you want to
                    load multiple bands at once use MultiBandRaster instead.
-            downsampl : default 1. Used to down-sample the image when loading it. A value of 2 for example will multiply the resolution by 2. 
+            downsampl : default 1. Used to down-sample the image when loading it. 
+                A value of 2 for example will multiply the resolution by 2. 
 
             Optionally, you can manually specify/override the georeferencing. 
             To do this you must set both of the following parameters:
@@ -1055,8 +1073,7 @@ class MultiBandRaster(__Raster):
 
 
 def simple_write_geotiff(outfile,raster,geoTransform,
-    wkt=None,proj4=None,
-    mask=None,dtype=gdal.GDT_Float32):
+    wkt=None,proj4=None,mask=None,dtype=gdal.GDT_Float32):
     """ Save a GeoTIFF.
     
     Inputs:
@@ -1131,8 +1148,3 @@ def simple_write_geotiff(outfile,raster,geoTransform,
     
     else:
         return dst_ds
-
-
-
-        
-        
