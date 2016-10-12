@@ -873,6 +873,36 @@ class SingleBandRaster(__Raster):
             print('Warning : load_data argument not understood. No data loaded.')
 
    
+    @classmethod
+    def from_array(cls, raster, geo_transform, proj4, 
+        gdal_dtype=gdal.GDT_Float32):
+        """ Create georaster from numpy array with georeferencing info
+
+        Parameters:
+            raster : 2-D NumPy array of raster to load
+            geo_transform : a Geographic Transform tuple of the form 
+                            (top left x, w-e cell size, 0, top left y, 0, 
+                             n-s cell size (-ve))
+            proj4 : a proj4 string representing the raster projection
+            gdal_dtype : a gdal data type (default gdal.GDT_Float32)
+
+        Returns:
+            georaster instance (in-memory representation only)
+
+         """
+
+        mem_drv = gdal.GetDriverByName('MEM')
+        source_ds = mem_drv.Create('', raster.shape[1], raster.shape[0],
+                         1, gdal.GDT_Byte)
+        source_ds.SetGeoTransform(geo_transform)
+        srs = osr.SpatialReference()
+        srs.ImportFromProj4(proj4)
+        source_ds.SetProjection(srs.ExportToWkt())
+        source_ds.GetRasterBand(1).WriteArray(raster)
+
+        return cls(source_ds)
+
+
         
     def find_value_at_coords(self,x,y,**kwargs):
         """ (DEPRECATED) Extract the pixel value at the specified coordinates.
