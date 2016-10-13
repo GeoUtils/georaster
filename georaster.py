@@ -252,6 +252,56 @@ class __Raster:
  
 
 
+    @classmethod
+    def from_array(cls, raster, geo_transform, proj4, 
+        gdal_dtype=gdal.GDT_Float32, nodata=None):
+        """ Create georaster from numpy array and georeferencing info
+
+        Parameters:
+            raster : 2-D NumPy array of raster to load
+            geo_transform : a Geographic Transform tuple of the form 
+                            (top left x, w-e cell size, 0, top left y, 0, 
+                             n-s cell size (-ve))
+            proj4 : a proj4 string representing the raster projection
+            gdal_dtype : a gdal data type (default gdal.GDT_Float32)
+            nodata : None or the nodata value for this array
+
+        Returns:
+            georaster instance (in-memory representation of data only)
+
+         """
+
+        if len(raster.shape) > 2:
+            nbands = raster.shape[2]
+        else:
+            nbands = 1
+
+        # Create a GDAL memory raster to hold the input array
+        mem_drv = gdal.GetDriverByName('MEM')
+        source_ds = mem_drv.Create('', raster.shape[1], raster.shape[0],
+                         nbands, gdal.GDT_Byte)
+
+        # Set geo-referencing
+        source_ds.SetGeoTransform(geo_transform)
+        srs = osr.SpatialReference()
+        srs.ImportFromProj4(proj4)
+        source_ds.SetProjection(srs.ExportToWkt())
+
+        # Write input array to the GDAL memory raster
+        for b in range(0,nbands):
+            if nbands > 1:
+                r = raster[:,:,b]
+            else:
+                r = raster
+            source_ds.GetRasterBand(b+1).WriteArray(r)
+            if nodata != None:
+                source_ds.GetRasterBand(b+1).SetNoDataValue(nodata)
+
+        # Return a georaster instance instantiated by the GDAL raster
+        return cls(source_ds)
+
+
+
     def get_extent_latlon(self):
         """ Return raster extent in lat/lon, (xll,xur,yll,yur) """
         if self.proj != None:
@@ -871,36 +921,6 @@ class SingleBandRaster(__Raster):
 
         else:
             print('Warning : load_data argument not understood. No data loaded.')
-
-   
-    @classmethod
-    def from_array(cls, raster, geo_transform, proj4, 
-        gdal_dtype=gdal.GDT_Float32):
-        """ Create georaster from numpy array with georeferencing info
-
-        Parameters:
-            raster : 2-D NumPy array of raster to load
-            geo_transform : a Geographic Transform tuple of the form 
-                            (top left x, w-e cell size, 0, top left y, 0, 
-                             n-s cell size (-ve))
-            proj4 : a proj4 string representing the raster projection
-            gdal_dtype : a gdal data type (default gdal.GDT_Float32)
-
-        Returns:
-            georaster instance (in-memory representation only)
-
-         """
-
-        mem_drv = gdal.GetDriverByName('MEM')
-        source_ds = mem_drv.Create('', raster.shape[1], raster.shape[0],
-                         1, gdal.GDT_Byte)
-        source_ds.SetGeoTransform(geo_transform)
-        srs = osr.SpatialReference()
-        srs.ImportFromProj4(proj4)
-        source_ds.SetProjection(srs.ExportToWkt())
-        source_ds.GetRasterBand(1).WriteArray(raster)
-
-        return cls(source_ds)
 
 
         
