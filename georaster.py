@@ -108,7 +108,7 @@ try:
     from scipy.stats import nanmean
 except ImportError:
     from numpy import nanmean
-from osgeo import osr, gdal
+from osgeo import osr, gdal, ogr
 try:
     import pyproj
 except ImportError:
@@ -344,7 +344,7 @@ class __Raster:
 
 
 
-    def coord_to_px(self,x,y,latlon=False,rounded=True):
+    def coord_to_px(self,x,y,latlon=False,rounded=True,check_valid=True):
         """ Convert x,y coordinates into pixel coordinates of raster.
 
         x,y may be either in native coordinate system of raster or lat/lon.
@@ -354,6 +354,7 @@ class __Raster:
             y : float, y coordinate to convert.
             latlon : boolean, default False. Set as True if bounds in lat/lon.
             rounded : if set to True, return the rounded pixel coordinates, otherwise return the float values
+            check_valid : bool, if set to True, will check that all pixels are in the valid range. 
 
         Returns:
             (x_pixel,y_pixel)
@@ -381,6 +382,9 @@ class __Raster:
         if rounded==True:
             xPixel = np.round(xPixel)
             yPixel = np.round(yPixel)
+
+        if check_valid==False:
+            return xPixel, yPixel
 
         # Check that pixel location is not outside image dimensions
         nx = self.ds.RasterXSize
@@ -840,6 +844,38 @@ class __Raster:
         return cg(self.srs.ExportToProj4())
 
 
+    def intersection(self,filename):
+        """
+        Return the coordinates of the intersection between this image and a second image.
+        Inputs:
+        - filename : str, path to the second image
+        Outputs:
+        - xmin, xmax, ymin, ymax : extent of the intersection between the 2 images
+        """
+
+        # Create a polygon of the envelope of the first image
+        xmin, xmax, ymin, ymax = self.extent
+        wkt = "POLYGON ((%f %f, %f %f, %f %f, %f %f, %f %f))" %(xmin,ymin,xmin,ymax,xmax,ymax,xmax,ymin,xmin,ymin)
+        poly1=ogr.CreateGeometryFromWkt(wkt)
+
+        # Create a polygon of the envelope of the second image
+        img = SingleBandRaster(filename,load_data=False)
+        xmin, xmax, ymin, ymax = img.extent
+        wkt = "POLYGON ((%f %f, %f %f, %f %f, %f %f, %f %f))" %(xmin,ymin,xmin,ymax,xmax,ymax,xmax,ymin,xmin,ymin)
+        poly2=ogr.CreateGeometryFromWkt(wkt)
+
+        # Compute intersection envelope
+        intersect=poly1.Intersection(poly2)
+        extent = intersect.GetEnvelope()
+
+        # check that intersection is not void
+        if intersect.GetArea()==0:
+            print 'Warning: Intersection is void'
+            return 0
+        else:
+            return extent
+
+        
 
 class SingleBandRaster(__Raster):
     """ A geographic raster dataset with one band of data.
