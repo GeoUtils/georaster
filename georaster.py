@@ -844,33 +844,36 @@ class __Raster:
         return cg(self.srs.ExportToProj4())
 
 
+
     def intersection(self,filename):
-        """
-        Return the coordinates of the intersection between this image and a second image.
+        """ Return coordinates of intersection between this image and another.
+
         Inputs:
         - filename : str, path to the second image
+        
         Outputs:
         - xmin, xmax, ymin, ymax : extent of the intersection between the 2 images
+
         """
 
         # Create a polygon of the envelope of the first image
         xmin, xmax, ymin, ymax = self.extent
         wkt = "POLYGON ((%f %f, %f %f, %f %f, %f %f, %f %f))" %(xmin,ymin,xmin,ymax,xmax,ymax,xmax,ymin,xmin,ymin)
-        poly1=ogr.CreateGeometryFromWkt(wkt)
+        poly1 = ogr.CreateGeometryFromWkt(wkt)
 
         # Create a polygon of the envelope of the second image
-        img = SingleBandRaster(filename,load_data=False)
+        img = SingleBandRaster(filename, load_data=False)
         xmin, xmax, ymin, ymax = img.extent
         wkt = "POLYGON ((%f %f, %f %f, %f %f, %f %f, %f %f))" %(xmin,ymin,xmin,ymax,xmax,ymax,xmax,ymin,xmin,ymin)
-        poly2=ogr.CreateGeometryFromWkt(wkt)
+        poly2 = ogr.CreateGeometryFromWkt(wkt)
 
         # Compute intersection envelope
-        intersect=poly1.Intersection(poly2)
+        intersect = poly1.Intersection(poly2)
         extent = intersect.GetEnvelope()
 
         # check that intersection is not void
         if intersect.GetArea()==0:
-            print 'Warning: Intersection is void'
+            print('Warning: Intersection is void')
             return 0
         else:
             return extent
