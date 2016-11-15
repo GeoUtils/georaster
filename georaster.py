@@ -279,7 +279,7 @@ class __Raster:
         # Create a GDAL memory raster to hold the input array
         mem_drv = gdal.GetDriverByName('MEM')
         source_ds = mem_drv.Create('', raster.shape[1], raster.shape[0],
-                         nbands, gdal.GDT_Byte)
+                         nbands, gdal_dtype)
 
         # Set geo-referencing
         source_ds.SetGeoTransform(geo_transform)
