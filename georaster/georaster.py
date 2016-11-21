@@ -794,8 +794,8 @@ class __Raster:
 
         # Get x,y coordinates in the matrix grid
         xpx1, ypx1 = self.coord_to_px(x,y,latlon=latlon,rounded=False)
-        xi = xpx1 - self.x0
-        yi = ypx1 - self.y0
+        xi = xpx1# - self.x0
+        yi = ypx1# - self.y0
 
         #Case coordinates are not an array
         if np.rank(xi)<1:
@@ -1112,14 +1112,14 @@ class MultiBandRaster(__Raster):
                         # If first band, create a storage object
                         if self.r == None:
                             (tmp,self.extent) = self.read_single_band_subset(load_data,
-                                        latlon=latlon,extent=True,band=b,update_info=True)
+                                        latlon=latlon,extent=True,band=b)
                             self.r = np.zeros((tmp.shape[0],tmp.shape[1],
                                len(self.bands)))
                             self.r[:,:,k] = tmp
                         # Store subsequent bands in kth dimension of store.
                         else:
                             self.r[:,:,k] = self.read_single_band_subset(load_data,
-                                        latlon=latlon,band=b)
+                                                                         latlon=latlon,band=b)
                         k += 1
 
         # Don't load any data
