@@ -109,4 +109,23 @@ Once an image is loaded, the object provides the following attributes:
 - Raster.coordinates() : return projected or geographic coordinates of the whole image (or, with optional arguments, a subset of the image)
 
 
+## Documentation
+
+Official documentation will shortly be hosted on ReadTheDocs.
+
+
+## Get in touch
+
+* Report bugs, suggest features or view the code on GitHub.
+
+
+## History
+
+GeoRaster was initially developed by Andrew Tedstone in 2013 whilst at the University of Edinburgh. Andrew Tedstone and Amaury Dehecq continue to develop and maintain the package. GeoRaster was made publicly available in January 2016.
+
+
+## License
+
+GeoRaster is licenced under GNU Lesser General Public License (LGPLv3).
+
 
