@@ -961,37 +961,6 @@ class SingleBandRaster(__Raster):
         else:
             print('Warning : load_data argument not understood. No data loaded.')
 
-
-        
-    def find_value_at_coords(self,x,y,**kwargs):
-        """ (DEPRECATED) Extract the pixel value at the specified coordinates.
-        
-        This function is maintained for backward compatibility. New code 
-        should call self.value_at_coords() instead.
-
-        ----------------------------------------------------------------------
-
-        Parameters:
-            x : x coordinate in format of target dataset.
-            y : y coordinate in format of target dataset.
-        Returns:
-            float of extracted pixel value.
-        
-        """
-        return self.value_at_coords(x,y,**kwargs)
-                
-
-
-    def smooth(self,px=3):
-        """ Apply gaussian filter of specified window px.
-        
-        Parameters:
-            px : window size in pixels to supply to ndimage.gaussian_filter
-        Returns:
-            self.smoothed : smoothed version of self.r.
-            
-        """
-        self.smoothed = ndimage.gaussian_filter(self.r,px)
         
 
 
