@@ -6,7 +6,7 @@
 GeoRaster - easy use of geographic and projected rasters in Python
 ==================================================================
 
-This package makes it easy to load, query and save geographic raster datasets in the Python programming language. The package uses Geospatial Data Abstraction Library (GDAL) bindings, and so in a single command can import any geo-referenced dataset that is understood by GDAL, complete with all geo-referencing information and various helper functions.
+This package makes it easy to load, query and save geographic raster datasets - such as GeoTIFFs - in the Python programming language. The package uses Geospatial Data Abstraction Library (GDAL) bindings, and so in a single command can import any geo-referenced dataset that is understood by GDAL, complete with all geo-referencing information and various helper functions.
 
 GeoRaster is compatible with Python 2.4-3.x.
 
@@ -29,6 +29,7 @@ Contents:
    reprojecting
    plotting-options
    api
+   single
 
 
 

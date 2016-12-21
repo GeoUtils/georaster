@@ -1,21 +1,22 @@
 .. _loading-data:
 
-Options for loading in rasters
-------------------------------
+Options for loading rasters
+---------------------------
 
-As explained in Getting Started, we can load in rasters that already exist in files as follows::
+As introduced in :ref:`get-started`, we can load in rasters that already exist in files as follows::
 
 	# For an image with only a single band
 	single_im = georaster.SingleBandRaster('my-singleband-image.tif')
-	# For an image containing several bands
+
+	# Or, for an image containing several bands
 	multi_im = georaster.MultiBandRaster('my-multiband-image.tif')
 
 This basic command loads both the raster metadata, and all the data within that raster. However, this isn't always what's needed.
 
 
 
-Load in a smaller area of a raster
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Load a smaller area of a raster
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 We can specify the coordinates of a specific area of our raster to load in. This applies to both Single- and Multi-BandRasters. These coordinates can be in either Latitude/Longitude (WGS84) or the coordinate system of the raster. 
 
@@ -38,8 +39,8 @@ Simply pass the flag `load_data=False` when you create the Single- or Multi-Band
 
 
 
-Only load select bands of a multi-band-raster
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Only load specific bands of a multi-band-raster
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Supply the numbers of the bands that you want to load as a tuple. These are the bands as numbered by GDAL, so begin from 1 (not 0)::
 
@@ -50,7 +51,7 @@ We can then retrieve these individual bands of data as follows::
 	# Plot band 3
 	plt.imshow(im.r[:, :, im.gdal_band(3)]
 
-You'll notice that this uses the convenience function `gdal_band()`. This converts the original GDAL band number into the location in which the band is stored in `im.r`, which is a multi-dimensional NumPy array.
+We use the convenience function :py:func:`~georaster.MultiBandRaster.gdal_band`. This converts the original GDAL band number into the location in which the band is stored in `im.r`, which is a multi-dimensional NumPy array.
 
 
 
