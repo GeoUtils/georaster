@@ -29,7 +29,6 @@ Contents:
    reprojecting
    plotting-options
    api
-   single
 
 
 
