@@ -155,7 +155,7 @@ class __Raster:
     ds = None
     # GeoTransform 
     trans = None
-    #: Extent of raster in order understood by Basemap, (xll,xur,yll,yur)
+    # Extent of raster in order understood by Basemap, (xll,xur,yll,yur)
     extent = None
     # SRS
     srs = None
@@ -255,19 +255,22 @@ class __Raster:
     @classmethod
     def from_array(cls, raster, geo_transform, proj4, 
         gdal_dtype=gdal.GDT_Float32, nodata=None):
-        """ Create georaster from numpy array and georeferencing info
+        """ Create a georaster object from numpy array and georeferencing information.
 
-        Parameters:
-            raster : 2-D NumPy array of raster to load
-            geo_transform : a Geographic Transform tuple of the form 
-                            (top left x, w-e cell size, 0, top left y, 0, 
-                             n-s cell size (-ve))
-            proj4 : a proj4 string representing the raster projection
-            gdal_dtype : a gdal data type (default gdal.GDT_Float32)
-            nodata : None or the nodata value for this array
+        :param raster: 2-D NumPy array of raster to load
+        :type raster: np.array
+        :param geo_transform: a Geographic Transform tuple of the form \
+        (top left x, w-e cell size, 0, top left y, 0, n-s cell size (-ve))
+        :type geo_transform: tuple
+        :param proj4: a proj4 string representing the raster projection
+        :type proj4: str
+        :param gdal_dtype: a GDAL data type (default gdal.GDT_Float32)
+        :type gdal_dtype: int
+        :param nodata: None or the nodata value for this array
+        :type nodata: None, int, float, str
 
-        Returns:
-            georaster instance (in-memory representation of data only)
+        :returns: GeoRaster object
+        :rtype: GeoRaster
 
          """
 
@@ -303,30 +306,39 @@ class __Raster:
 
 
     def get_extent_latlon(self):
-        """ Return raster extent in lat/lon, (xll,xur,yll,yur) """
+        """ Return raster extent in lat/lon coordinates.
+
+        LL = lower left, UR = upper right.
+
+        :returns: (lonll, lonur, latll, latur)  
+        :rtype: tuple
+
+        """
         if self.proj != None:
-            left,bottom = self.proj(self.extent[0],self.extent[2],inverse=True)
-            right,top = self.proj(self.extent[1],self.extent[3],inverse=True)
-            return (left,right,bottom,top)
+            left,bottom = self.proj(self.extent[0], self.extent[2], inverse=True)
+            right,top = self.proj(self.extent[1], self.extent[3], inverse=True)
+            return (left, right, bottom, top)
         else:
             return self.extent
 
 
 
-    def get_extent_projected(self,pyproj_obj):
+    def get_extent_projected(self, pyproj_obj):
         """ Return raster extent in a projected coordinate system.
 
         This is particularly useful for converting raster extent to the 
         coordinate system of a Basemap instance.
 
-        Parameters:
-            pyproj_obj : A pyproj instance (such as a Basemap instance) of the
-                system to convert into.
+       
+        :param pyproj_obj: The projection system to convert into.
+        :type pyproj_obj: pyproj.Proj
 
-        Returns:
-            (left,right,bottom,top)
 
-        Example:
+        :returns: extent in requested coordinate system (left, right, bottom, top)
+        :type: tuple
+
+        :Example:
+
         >>> from mpl_toolkits.basemap import Basemap
         >>> my_im = georaster.SingleBandRaster('myfile.tif')
         >>> my_map = Basemap(...)
@@ -344,20 +356,22 @@ class __Raster:
 
 
 
-    def coord_to_px(self,x,y,latlon=False,rounded=True,check_valid=True):
-        """ Convert x,y coordinates into pixel coordinates of raster.
+    def coord_to_px(self, x, y, latlon=False, rounded=True, check_valid=True):
+        """ Convert projected or geographic coordinates into pixel coordinates of raster.
 
-        x,y may be either in native coordinate system of raster or lat/lon.
+        :param x: x (longitude) coordinate to convert.
+        :type x: float
+        :param y: y (latitude) coordinate to convert.
+        :type y: float
+        :param latlon: Set as True if provided coordinates are in lat/lon.
+        :type latlon: boolean
+        :param rounded: Return rounded pixel coordinates? otherwise return float.
+        :type rounded: boolean
+        :param check_valid: Check that all pixels are in the valid range. 
+        :type check_valid: boolean
 
-        Parameters:
-            x : float, x coordinate to convert.
-            y : float, y coordinate to convert.
-            latlon : boolean, default False. Set as True if bounds in lat/lon.
-            rounded : if set to True, return the rounded pixel coordinates, otherwise return the float values
-            check_valid : bool, if set to True, will check that all pixels are in the valid range. 
-
-        Returns:
-            (x_pixel,y_pixel)
+        :returns: corresponding pixel coordinates (x, y) of provided projected or geographic coordinates.
+        :rtype: tuple
 
         """
 
@@ -405,14 +419,16 @@ class __Raster:
 
 
     def read_single_band(self,band=1,downsampl=1):
-        """ Return np array of specified band, defaults to band 1. 
+        """ Read in the data of a single band of data within the dataset.
 
-        Parameters:
-            band : int, number of band to read. Default 1.
-            downsampl: int. Used to reduce the size of the image loaded. 
-                Default is 1 (i.e. no down-sampling)
-        Returns:
-            np.array of specified band
+        :param band: number of band to read.
+        :type band: int
+        :param downsampl: Reduce the size of the image loaded. Default of 1 \
+        specifies no down-sampling.
+        :type downsampl: int
+
+        :returns: array of specified band
+        :rtype: np.array
 
         """
         band = int(band)
@@ -435,22 +451,39 @@ class __Raster:
                                 update_info=False,downsampl=1):
         """ Return a subset area of the specified band of the dataset.
 
-        Supply coordinates in native system or lat/lon.
+        You may supply coordinates either in the raster's current coordinate \
+        system or in lat/lon.
 
-        Parameters:
-            bounds : tuple (xstart,xend,ystart,yend) (same format as extent)
-            latlon : boolean, default False. Set as True if bounds in lat/lon.
-            band : int, number of band to read. Default 1.
-            extent: boolean, default False. If True, return extent of subset 
-                area in the coordinate system of the image.
-            update_info : boolean, default False. If True, set the 
-                georeferencing information of the object to match this subset
-                area (i.e. extent, nx, ny, x0, y0). You should only set this 
-                to true if you are saving the array returned by this function
-                into self.r!
+        .. warning:: This does not set the contents of `self.r` to the \
+        data from the band and region requested. 
 
-        Returns:
-            np.array of subset area
+        .. warning:: When `update_info=True` the geo-referencing information \
+        for this GeoRaster instance will be updated to match the extent of \
+        the area requested in `bounds`. Only do this if you are setting the \
+        data extent of `self.r` to match!
+    
+        :param bounds: The corners of the area to read in (xmin, xmax, ymin, ymax)
+        :type bounds: tuple
+        :param latlon: Set as True if bounds provided in lat/lon.
+        :type latlon: boolean
+        :param band: number of band in the dataset to read. 
+        :type band: int
+        :param extent: If True, also return bounds of subset area in the \
+        coordinate system of the image.
+        :type extent: boolean
+        :param update_info: If True, set the georeferencing information of \
+        the object to match the requested subset area. You should only set \
+        this to True if you are also saving the array returned by this \
+        function into self.r.
+        :type update_info: boolean
+
+        :returns: when extent=False, array containing data from the \
+        band of the area requested.
+        :rtype: np.array 
+
+        :returns: when extent=True, index 0 of the tuple contains the data \
+        and index 1 contains the extent of the area.
+        :rtype: tuple
 
         """
         
@@ -513,7 +546,7 @@ class __Raster:
 
 
 
-    def value_at_coords(self,x,y,latlon=False,band=None,system=None,
+    def value_at_coords(self,x,y,latlon=False,band=None,
                         window=None,return_window=False):
         """ Extract the pixel value(s) at the specified coordinates.
         
@@ -522,37 +555,41 @@ class __Raster:
         band's pixel value.
 
         Optionally, return mean of pixels within a square window.
-                
-        Parameters:
-            x : float, x coordinate.
-            y : float, y coordinate.
-            latlon : boolean, True if coordinates in WGS84, false if in 
-                     native system of the raster.
-            band : the GDAL Dataset band number to extract from.
-            system : DEPRECATED but maintained for backward compatibility.
-            window : int or None, expand area around coordinate to dimensions
-                      window * window. window must be odd.
-            return_window : boolean, default False. If True when window=int,
-                            returns (mean,array) where array is the dataset 
-                            extracted via the specified window size.
+            
+        :param x: x (or longitude) coordinate.
+        :type x: float
+        :param y : y (or latitude) coordinate.
+        :type y: float
+        :param latlon: Set to True if coordinates provided as longitude/latitude.
+        :type latlon: boolean
+        :param band: the GDAL Dataset band number to extract from.
+        :type band: int
+        :param window: expand area around coordinate to dimensions \
+                  window * window. window must be odd.
+        :type window: None, int
+        :param return_window: If True when window=int, returns (mean,array) \
+        where array is the dataset extracted via the specified window size.
+        :type return_window: boolean
 
-        Returns:
-            if band specified, float of extracted pixel value.
+        :returns: When called on a SingleBandRaster or with a specific band \
+        set, return value of pixel.
+        :rtype: float
+        :returns: If a MultiBandRaster and the band is not specified, a \
+        dictionary containing the value of the pixel in each band.
+        :rtype: dict
+        :returns: In addition, if return_window=True, return tuple of \
+        (values, arrays)
+        :rtype: tuple
 
-            if band not specified, depending on number of bands in dataset:
-                more than 1 band : dict of GDAL band number:float pixel value.
-                just 1 band : float of extracted pixel value.
+        :examples:
 
-            if return_window = True, (value[s],array[s])
-
-
-        Examples:
         >>> self.value_at_coords(-48.125,67.8901,window=3)
         Returns mean of a 3*3 window:
             v v v \
             v c v  | = float(mean)
             v v v /
         (c = provided coordinate, v= value of surrounding coordinate)
+
         """
 
         if window != None:
@@ -569,11 +606,6 @@ class __Raster:
             else:
                 value = None
             return value
-
-        # Check the deprecated georeferencing system parameter.
-        if system == 'wgs84':
-            latlon = True
-
 
         # Convert coordinates to pixel space
         xpx,ypx = self.coord_to_px(x,y,latlon=latlon)
@@ -630,17 +662,23 @@ class __Raster:
 
     def coordinates(self,Xpixels=None,Ypixels=None,latlon=False):
         """ Projected (or geographic) coordinates for specified pixels.
-        if Xpixels=None and Ypixels=None (default), a grid with all 
-        coordinates is returned
-        if latlon=True, return the lat/lon coordinates
-        Coordinates returned are for cell centres.
 
-        Parameters:
-            Xpixels : float or array, x-index of the pixels
-            Ypixels : float or array, y-index of the pixels
-            latlon : bool, if set to True, lat/lon coordinates are returned
-        Returns:
-            (Xgeo,Ygeo) : tuple, containing 1-d numpy arrays of coordinates 
+        Coordinates returned are for cell centres.        
+
+        If Xpixels=None and Ypixels=None (default), a grid with all 
+        coordinates is returned.
+
+        If latlon=True, return the lat/lon coordinates.
+
+        :param Xpixels: x-index of the pixels
+        :type Xpixels: float, np.array
+        :param Ypixels: y-index of the pixels
+        :type Xpixels: float, np.array
+        :param latlon: If set to True, lat/lon coordinates are returned
+        :type latlon: boolean
+
+        :returns: (X, Y) where X and Y are 1-D numpy arrays of coordinates 
+        :rtype: tuple
 
         """
         
@@ -676,8 +714,8 @@ class __Raster:
         Spatial Reference call. It remains maintained for backward 
         compatibility with dependent scripts.
 
-        Returns:
-            str : zone
+        :returns: zone
+        :rtype: str
 
         """
         return self.srs.GetUTMZone()
@@ -689,10 +727,10 @@ class __Raster:
         Return pixel size of loaded raster. Maintained for backward 
         compatibility only, use self.xres and self.yres in new projects.
 
-        Returns:
-            floats: xres, yres
+        :returns: xres, yres
+        :rtype: float
 
-         """
+        """
         return self.xres, self.yres
 
 
@@ -706,26 +744,41 @@ class __Raster:
         Use to reproject/resample a dataset in-memory (rather than creating a
         new file), the function returns a new SingleBand or MultiBandRaster.
 
-        CAUTION : not tested to work with datasets where you have provided
-        georeferencing information manually by providing geo_transform and 
-        spatial_ref when creating your georaster instance.
+        .. warning:: Not tested to work with datasets where you have provided \
+        georeferencing information manually by providing geo_transform and \
+        spatial_ref when creating your GeoRaster instance.
         
-        Parameters:
-            target_srs : Spatial Reference System to reproject to
-            nx, ny : int, size of the output raster
-            xmin, ymax : f, coordinates of the corners
-            xres, yres : f, pixel size
-            dtype : gdal.GTD_* data type (e.g GDT_Byte, GDT_Int32, GDT_Float64...)
-            nodata : f, no data value in the input raster, default is None
-            interp_type : gdal.GRA_* interpolation algorithm 
-            (e.g GRA_NearestNeighbour, GRA_Bilinear, GRA_CubicSpline...), 
-            default is GRA_NearestNeighbour
-            progress : bool, set to True to display a progress bar
+        :param target_srs: Spatial Reference System to reproject to
+        :type target_srs: srs.SpatialReference
+        :param nx: X size of output raster
+        :type nx: int
+        :param ny: Y size of output raster
+        :type ny: int
+        :param xmin: value of X minimum coordinate (corner)
+        :type xmin: float
+        :param xmax: value of X maximum coordinate (corner)
+        :type xmax: float
+        :param ymin: value of Y minimum coordinate (corner)
+        :type ymin: float
+        :param ymax: value of Y maximum coordinate (corner)
+        :type ymax: float
+        :param xres: pixel size in X dimension
+        :type xres: float
+        :param yres: pixel size in Y dimension
+        :type yres: float
+        :param dtype: GDAL data type, e.g. gdal.GDT_Byte.
+        :type dtype: int
+        :param nodata: NoData value in the input raster, default is None
+        :type nodata: None, float, int, np.nan
+        :param interp_type: gdal.GRA_* interpolation algorithm \
+        (e.g GRA_NearestNeighbour, GRA_Bilinear, GRA_CubicSpline...), 
+        :type interp_type: int
+        :param progress: Set to True to display a progress bar
+        :type progress: boolean
 
-        Returns:
-            A SingleBandRaster or MultiBandRaster object containing the
+        :returns: A SingleBandRaster or MultiBandRaster object containing the
             reprojected image (in memory - not saved to file system)
-            
+        :rtype: georaster.SingleBandRaster, georaster.MultiBandRaster            
 
         """
         # Create an in-memory raster
@@ -771,24 +824,26 @@ class __Raster:
         """
         Interpolate raster at points (x,y). 
 
-        Values are extracted from self.r rather than the file itself, so if 
-        changes have been made to self.r, they will apply.
+        Values are extracted from self.r.
 
         x,y may be either in native coordinate system of raster or lat/lon.
         
-        WARNING : For now, values are considered as known at the 
+        .. warning:: For now, values are considered as known at the \
         upper-left corner, whereas it should be in the centre of the cell.
 
-        Parameters:
-            x : float or array, x coordinate(s) to convert.
-            y : float or array, y coordinate(s) to convert.
-            order : order of the spline interpolation (range 0-5), 
-              0=nearest-neighbor, 1=bilinear (default), 2-5 does not seem to 
-              work with NaNs
-            latlon : boolean, default False. Set as True if bounds in lat/lon.
+        :param x: x coordinate(s) to convert.
+        :type x: float, np.array
+        :param y: y coordinate(s) to convert.
+        :type y: float, np.array
+        :param order: order of the spline interpolation (range 0-5), \
+          0=nearest-neighbor, 1=bilinear (default), 2-5 does not seem to \ 
+          work with NaNs.
+        :type order: int
+        :param latlon: Set as True if input coordinates are in lat/lon.
+        :type latlon: boolean
 
-        Returns:
-            z_interp, interpolated raster values, same shape as lon and lat
+        :returns: interpolated raster values, same shape as x and y
+        :rtype: np.array
 
         """
 
@@ -797,7 +852,7 @@ class __Raster:
         xi = xpx1 - self.x0
         yi = ypx1 - self.y0
 
-        #Case coordinates are not an array
+        # Case coordinates are not an array
         if np.rank(xi)<1:
             xi = np.array([xi,])
             yi = np.array([yi,])
@@ -820,12 +875,13 @@ class __Raster:
 
         Georeferenced and subset according to the current raster.
 
-        Inputs:
-            filename : the path and filename to save the file to.
-            dtype : GDAL datatype, defaults to Float32.
+        :params filename: the path and filename to save the file to.
+        :type filename: str
+        :params dtype: GDAL datatype, defaults to Float32.
+        :type dtype: int
 
-        Returns:
-            True on success.
+        :returns: 1 on success.
+        :rtype: int
 
         """
 
@@ -838,7 +894,12 @@ class __Raster:
 
 
     def cartopy_proj(self):
-        """ Return Cartopy Coordinate System for raster """
+        """ Return Cartopy Coordinate System for raster
+
+        :returns: Coordinate system of raster express as Cartopy system
+        :rtype: cartopy.crs.CRS
+
+        """
         import cartopy.crs as ccrs
         class cg(cartopy.crs.CRS): pass
         return cg(self.srs.ExportToProj4())
@@ -848,11 +909,12 @@ class __Raster:
     def intersection(self,filename):
         """ Return coordinates of intersection between this image and another.
 
-        Inputs:
-        - filename : str, path to the second image
+       :param filename : path to the second image (or another GeoRaster instance)
+       :type filename: str, georaster.__Raster
         
-        Outputs:
-        - xmin, xmax, ymin, ymax : extent of the intersection between the 2 images
+        :returns: extent of the intersection between the 2 images \
+        (xmin, xmax, ymin, ymax)
+        :rtype: tuple
 
         """
 
@@ -895,8 +957,10 @@ class SingleBandRaster(__Raster):
         proj : pyproj conversion object raster coordinates<->lat/lon 
         r : numpy band of array data
 
-    Example:
-    >>> georaster.SingleBandRaster('myfile.tif',load_data=True|False)
+
+    :example:
+
+    >>> georaster.SingleBandRaster('myfile.tif',load_data=False)
 
     """
      
@@ -1105,13 +1169,14 @@ class MultiBandRaster(__Raster):
     def gdal_band(self,b):
         """ Return numpy array location index for given GDAL band number. 
 
-        Parameters:
-            b : int, value of GDAL band number to lookup
+        :param b: GDAL band number to lookup
+        :type b: int
 
-        Returns:
-            int, index location of band in self.r
+        :returns: index location of band in self.r
+        :rtype: int
 
-        Example:
+        :example:
+        
         >>> giveMeMyBand2 = myRaster.r[:,:,myRaster.gdal_band(2)]
 
         """
