@@ -35,14 +35,14 @@ Here are the most useful attributes of a Single- or MultiBandRaster:
 Working with multi-band data
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-As mentioned above, multi-band data are loaded into `im.r` as a NumPy `[y*x*bands]` array. Use the convenience function `im.gdal_band` to retrieve a specific band according to its number as numbered by GDAL:
+As introduced above, multi-band data are loaded into `im.r` as a NumPy `[y*x*bands]` array. Use the convenience function `im.gdal_band` to retrieve a specific band according to its number as numbered by GDAL::
 
 	import matplotlib.pyplot as plt
 	# Load a raster with 5 bands
 	im = georaster.MultiBandRaster('my-5band-file.tif')
 	plt.imshow(im.r[:, :, im.gdal_band(3)])
 
-In this case we are displayed the band labelled by GDAL as number 3. See _load-existing-data to find out how to load in only specific bands.
+In this case we are displayed the band labelled by GDAL as number 3. See :ref:`_load-existing-data` to find out how to load in only specific bands.
 
 
 
