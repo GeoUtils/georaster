@@ -8,6 +8,10 @@ There are two basic types of raster: either a single-band dataset, which you loa
 
 There is also an 'advanced' option where you can load a raster dataset, manually specifying your geo-referencing information. See example below.
 
+# Installation #
+
+`pip install -e .`
+
 
 # Examples #
 
