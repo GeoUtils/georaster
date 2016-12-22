@@ -170,6 +170,8 @@ class __Raster:
     # Subset offsets in pixels
     x0 = None
     y0 = None
+    # GDAL datatype of data
+    dtype = None
   
 
 
