@@ -1,4 +1,3 @@
-name: gr_conda
 channels: !!python/tuple
 - au-eoed
 - defaults
@@ -39,5 +38,4 @@ dependencies:
   - gcircle==0.0.1
   - pipedviewer==1.3.0
   - pyferret==1.2
-prefix: /home/at15963/miniconda3/envs/gr_conda
 
