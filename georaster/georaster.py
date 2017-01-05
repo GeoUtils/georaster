@@ -871,7 +871,7 @@ class __Raster:
 
 
 
-    def save_geotiff(self,filename, dtype=gdal.GDT_Float32):
+    def save_geotiff(self,filename, dtype=gdal.GDT_Float32, **kwargs):
         """
         Save a GeoTIFF of the raster currently loaded.
 
@@ -891,7 +891,7 @@ class __Raster:
             raise ValueError('There are no image data loaded. No file can be created.')
 
         simple_write_geotiff(filename, self.r, self.trans, 
-            wkt=self.srs.ExportToWkt(), dtype=dtype)
+            wkt=self.srs.ExportToWkt(), dtype=dtype, **kwargs)
 
 
 
@@ -911,8 +911,8 @@ class __Raster:
     def intersection(self,filename):
         """ Return coordinates of intersection between this image and another.
 
-       :param filename : path to the second image (or another GeoRaster instance)
-       :type filename: str, georaster.__Raster
+        :param filename : path to the second image (or another GeoRaster instance)
+        :type filename: str, georaster.__Raster
         
         :returns: extent of the intersection between the 2 images \
         (xmin, xmax, ymin, ymax)
@@ -1198,23 +1198,27 @@ class MultiBandRaster(__Raster):
 
 
 def simple_write_geotiff(outfile,raster,geoTransform,
-    wkt=None,proj4=None,mask=None,dtype=gdal.GDT_Float32):
+    wkt=None,proj4=None,mask=None,dtype=gdal.GDT_Float32, nodata_value=-999):
     """ Save a GeoTIFF.
-    
-    Inputs:
-        outfile : filename to save image to, if 'none', returns a memory raster
-        raster : nbands x r x c
-        geoTransform : tuple (top left x, w-e cell size, 0, top left y, 0, 
-            n-s cell size (-ve))
-        One of proj4 or wkt :
-            proj4 : a proj4 string
-            wkt : a WKT projection string
-        dtype : gdal.GDT type (Byte : 1, Int32 : 5, Float32 : 6)
 
-    -999 is specified as the NoData value.
+    One of proj4 or wkt are required.
+        
+    :param outfile: filename to save image to, if 'none', returns a memory raster
+    :type outfile: string
+    :param raster: the raster to save, [rows, cols] or [rows, cols, bands]
+    :type raster: np.array
+    :param geoTransform: (top left x, w-e cell size, 0, top left y, 0, \
+        n-s cell size (-ve))
+    :param proj4: a proj4 string
+    :type proj4: string
+    :param wkt: a WKT projection string
+    :type wkt: string
+    :param dtype: gdal.GDT type (Byte : 1, Int32 : 5, Float32 : 6)
+    :type dtype: int
+    :param nodata_value: The value in the raster to set as the NoData value
+    :type nodata_value: float, int
 
-    Outputs:
-        A GeoTiff named outfile.
+    :returns: True or a GDAL memory raster.
     
     Based on http://adventuresindevelopment.blogspot.com/2008/12/python-gdal-adding-geotiff-meta-data.html
     and http://www.gdal.org/gdal_tutorial.html
@@ -1228,9 +1232,9 @@ def simple_write_geotiff(outfile,raster,geoTransform,
 
     # Check if the image is multi-band or not. 
     if raster.shape.__len__() == 3:
-        nbands = raster.shape[0]    
-        ydim = raster.shape[1]
-        xdim = raster.shape[2]
+        nbands = raster.shape[2]    
+        ydim = raster.shape[0]
+        xdim = raster.shape[1]
     elif raster.shape.__len__() == 2:
         nbands = 1
         ydim = raster.shape[0]
@@ -1257,12 +1261,12 @@ def simple_write_geotiff(outfile,raster,geoTransform,
     # Write the band(s)
     if nbands > 1:
         for band in range(1,nbands+1):
-            dst_ds.GetRasterBand(band).WriteArray(raster[band-1]) 
+            dst_ds.GetRasterBand(band).WriteArray(raster[:, :, band-1]) 
             if mask != None:
                 dst_ds.GetRasterBand(band).GetMaskBand().WriteArray(mask)
     else:
         dst_ds.GetRasterBand(1).WriteArray(raster)
-        dst_ds.GetRasterBand(1).SetNoDataValue(-999)
+        dst_ds.GetRasterBand(1).SetNoDataValue(nodata_value)
         if mask != None:
             dst_ds.GetRasterBand(1).GetMaskBand().WriteArray(mask)
 
