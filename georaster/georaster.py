@@ -1198,7 +1198,7 @@ class MultiBandRaster(__Raster):
 
 
 def simple_write_geotiff(outfile,raster,geoTransform,
-    wkt=None,proj4=None,mask=None,dtype=gdal.GDT_Float32, nodata_value=-999):
+    wkt=None,proj4=None,mask=None,dtype=gdal.GDT_Float32, nodata_value=-999, metadata=None):
     """ Save a GeoTIFF.
 
     One of proj4 or wkt are required.
@@ -1217,6 +1217,8 @@ def simple_write_geotiff(outfile,raster,geoTransform,
     :type dtype: int
     :param nodata_value: The value in the raster to set as the NoData value
     :type nodata_value: float, int
+    :param metadata: Metadata to be stored in the file. Pass a dictionnary with {key1:value1, key2:value2...}
+    :type metadata: dict
 
     :returns: True or a GDAL memory raster.
     
@@ -1269,6 +1271,10 @@ def simple_write_geotiff(outfile,raster,geoTransform,
         dst_ds.GetRasterBand(1).SetNoDataValue(nodata_value)
         if mask != None:
             dst_ds.GetRasterBand(1).GetMaskBand().WriteArray(mask)
+
+    # Add metadata
+    if metadata!=None:
+        dst_ds.SetMetadata(metadata)
 
     if outfile != 'none':
         # Close data set
