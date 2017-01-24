@@ -10,7 +10,12 @@ There is also an 'advanced' option where you can load a raster dataset, manually
 
 # Installation #
 
-`pip install -e .`
+    conda install -c conda-forge georaster
+
+
+# Full Documentation #
+
+http://georaster.readthedocs.io
 
 
 # Examples #
