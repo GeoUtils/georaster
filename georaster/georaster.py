@@ -758,10 +758,6 @@ class __Raster:
         :type ny: int
         :param xmin: value of X minimum coordinate (corner)
         :type xmin: float
-        :param xmax: value of X maximum coordinate (corner)
-        :type xmax: float
-        :param ymin: value of Y minimum coordinate (corner)
-        :type ymin: float
         :param ymax: value of Y maximum coordinate (corner)
         :type ymax: float
         :param xres: pixel size in X dimension
