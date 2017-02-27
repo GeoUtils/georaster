@@ -560,7 +560,7 @@ class __Raster:
             
         :param x: x (or longitude) coordinate.
         :type x: float
-        :param y : y (or latitude) coordinate.
+        :param y: y (or latitude) coordinate.
         :type y: float
         :param latlon: Set to True if coordinates provided as longitude/latitude.
         :type latlon: boolean
