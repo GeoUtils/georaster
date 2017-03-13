@@ -439,10 +439,10 @@ class __Raster:
             return self.ds.GetRasterBand(band).ReadAsArray()  
         else:
             arr = self.ds.GetRasterBand(band).ReadAsArray(
-                buf_xsize=int(self.nx/downsampl), 
-                buf_ysize=int(self.ny/downsampl))
-            self.nx = int(self.nx/downsampl)
-            self.ny = int(self.ny/downsampl)
+                buf_xsize=int(self.ds.RasterXSize/downsampl), 
+                buf_ysize=int(self.ds.RasterYSize/downsampl))
+            self.nx = int(self.ds.RasterXSize/downsampl)
+            self.ny = int(self.ds.RasterYSize/downsampl)
             self.xres = self.xres*downsampl
             self.yres = self.yres*downsampl
             return arr
@@ -1089,7 +1089,7 @@ class MultiBandRaster(__Raster):
 
 
     def __init__(self,ds_filename,load_data=True,bands='all',latlon=True,
-                 spatial_ref=None,geo_transform=None):
+                 spatial_ref=None,geo_transform=None,downsampl=1):
         """ Load a multi-band raster.
 
         Parameters:
@@ -1108,7 +1108,7 @@ class MultiBandRaster(__Raster):
             geo_transform : a Geographic Transform tuple of the form 
                             (top left x, w-e cell size, 0, top left y, 0, 
                              n-s cell size (-ve))
-
+            downsampl : default 1. Used to down-sample the image when loading it. 
         """
 
         self._load_ds(ds_filename,spatial_ref=spatial_ref,
@@ -1128,11 +1128,11 @@ class MultiBandRaster(__Raster):
 
             # Loading whole dimensions of raster
             if load_data == True:
-                self.r = np.zeros((self.ds.RasterYSize,self.ds.RasterXSize,
+                self.r = np.zeros((self.ds.RasterYSize/downsampl,self.ds.RasterXSize/downsampl,
                                len(self.bands)))
                 k = 0
                 for b in self.bands:
-                    self.r[:,:,k] = self.read_single_band(band=b)
+                    self.r[:,:,k] = self.read_single_band(band=b,downsampl=downsampl)
                     k += 1
 
             # Loading geographic subset of raster
@@ -1143,14 +1143,14 @@ class MultiBandRaster(__Raster):
                         # If first band, create a storage object
                         if self.r == None:
                             (tmp,self.extent) = self.read_single_band_subset(load_data,
-                                        latlon=latlon,extent=True,band=b,update_info=True)
+                                                                             latlon=latlon,extent=True,band=b,update_info=True, downsampl=downsampl)
                             self.r = np.zeros((tmp.shape[0],tmp.shape[1],
                                len(self.bands)))
                             self.r[:,:,k] = tmp
                         # Store subsequent bands in kth dimension of store.
                         else:
                             self.r[:,:,k] = self.read_single_band_subset(load_data,
-                                        latlon=latlon,band=b)
+                                                                         latlon=latlon,band=b,downsampl=downsampl)
                         k += 1
 
         # Don't load any data
