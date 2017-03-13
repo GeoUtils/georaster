@@ -560,7 +560,7 @@ class __Raster:
             
         :param x: x (or longitude) coordinate.
         :type x: float
-        :param y : y (or latitude) coordinate.
+        :param y: y (or latitude) coordinate.
         :type y: float
         :param latlon: Set to True if coordinates provided as longitude/latitude.
         :type latlon: boolean
@@ -758,10 +758,6 @@ class __Raster:
         :type ny: int
         :param xmin: value of X minimum coordinate (corner)
         :type xmin: float
-        :param xmax: value of X maximum coordinate (corner)
-        :type xmax: float
-        :param ymin: value of Y minimum coordinate (corner)
-        :type ymin: float
         :param ymax: value of Y maximum coordinate (corner)
         :type ymax: float
         :param xres: pixel size in X dimension

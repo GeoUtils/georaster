@@ -2,8 +2,8 @@
 # @Author: Andrew Tedstone
 # @Date:   2017-01-05 18:14:23
 # @Last Modified by:   Andrew Tedstone
-# @Last Modified time: 2017-01-24 17:53:17
+# @Last Modified time: 2017-01-24 18:23:38
 
-from georaster.georaster import SingleBandRaster
-from georaster.georaster import MultiBandRaster
-from georaster.georaster import simple_write_geotiff
+from .georaster import SingleBandRaster
+from .georaster import MultiBandRaster
+from .georaster import simple_write_geotiff
