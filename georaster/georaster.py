@@ -847,8 +847,8 @@ class __Raster:
 
         # Get x,y coordinates in the matrix grid
         xpx1, ypx1 = self.coord_to_px(x,y,latlon=latlon,rounded=False)
-        xi = xpx1 - self.x0
-        yi = ypx1 - self.y0
+        xi = xpx1 #- self.x0
+        yi = ypx1 #- self.y0
 
         # Case coordinates are not an array
         if np.rank(xi)<1:
