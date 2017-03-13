@@ -810,8 +810,12 @@ class __Raster:
             new_raster = SingleBandRaster(target_ds)
         band = target_ds.GetRasterBand(1)
         data = band.ReadAsArray(0, 0, nx, ny)
-        
-        for b in range(1,new_raster.ds.RasterCount):
+
+        # Replace no data value
+        if new_raster.ds.RasterCount>1:
+            for b in range(new_raster.ds.RasterCount):
+                new_raster.r[b,new_raster.r==0] = nodata
+        else:
             new_raster.r[new_raster.r==0] = nodata
     
         return new_raster
