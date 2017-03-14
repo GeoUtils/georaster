@@ -1144,17 +1144,21 @@ class MultiBandRaster(__Raster):
                 if len(load_data) == 4:
                     k = 0
                     for b in self.bands:
+
                         # If first band, create a storage object
                         if self.r == None:
                             (tmp,self.extent) = self.read_single_band_subset(load_data,
-                                                                             latlon=latlon,extent=True,band=b,update_info=True, downsampl=downsampl)
+                                                                             latlon=latlon,extent=True,band=b,update_info=False, downsampl=downsampl)
                             self.r = np.zeros((tmp.shape[0],tmp.shape[1],
                                len(self.bands)))
                             self.r[:,:,k] = tmp
                         # Store subsequent bands in kth dimension of store.
-                        else:
+                        elif b!=self.bands[-1]:
                             self.r[:,:,k] = self.read_single_band_subset(load_data,
                                                                          latlon=latlon,band=b,downsampl=downsampl)
+                        else:  #update infos at last iteration
+                            self.r[:,:,k] = self.read_single_band_subset(load_data, update_info=True, latlon=latlon,band=b,downsampl=downsampl)
+                            
                         k += 1
 
         # Don't load any data
