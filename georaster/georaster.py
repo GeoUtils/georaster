@@ -865,8 +865,13 @@ class __Raster:
 
 
         #interpolated data
-        z_interp = ndimage.map_coordinates(self.r, [yi, xi],order=order)
-
+        if self.r.ndim==2:
+            z_interp = ndimage.map_coordinates(self.r, [yi, xi],order=order)
+        elif self.r.ndim==3:
+            z_interp = ndimage.map_coordinates(self.r[:,:,band], [yi, xi],order=order)
+        else:
+            print "ERROR: Dimension of self.r must be 2 or 3"
+            
         return z_interp
 
 
