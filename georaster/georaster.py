@@ -317,8 +317,18 @@ class __Raster:
 
         """
         if self.proj != None:
-            left,bottom = self.proj(self.extent[0], self.extent[2], inverse=True)
-            right,top = self.proj(self.extent[1], self.extent[3], inverse=True)
+            xmin,xmax, ymin, ymax = self.extent
+            corners = [(xmin,ymin), (xmin,ymax), (xmax,ymax), (xmax,ymin)]
+            left, bottom = np.inf, np.inf
+            right, top = -np.inf, -np.inf
+            for c in corners:
+                lon, lat = self.proj(c[0],c[1], inverse=True)
+                left = min(left,lon)
+                bottom = min(bottom, lat)
+                right = max(right, lon)
+                top = max(top, lat)
+            #left,bottom = self.proj(self.extent[0], self.extent[2], inverse=True)
+            #right,top = self.proj(self.extent[1], self.extent[3], inverse=True)
             return (left, right, bottom, top)
         else:
             return self.extent
