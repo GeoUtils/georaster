@@ -900,6 +900,78 @@ class __Raster:
             
         return z_interp
 
+    
+    def interp_from_ds(self,x,y,order=1,latlon=False,bands=0):
+        """
+        Interpolate raster at points (x,y). Values are extracted from the dataset directly, so no need to load it, but it will probably take longer.
+        !! Warning : Right now, only integer pixel values can be extracted, subpixel interpolation must be implemented. !!
+
+        x,y may be either in native coordinate system of raster or lat/lon.
+        
+        
+        :param x: x coordinate(s) to convert.
+        :type x: float, np.array
+        :param y: y coordinate(s) to convert.
+        :type y: float, np.array
+        :param order: order of the spline interpolation (range 0-5), \
+          0=nearest-neighbor, 1=bilinear (default), 2-5 does not seem to \ 
+          work with NaNs.
+        :type order: int
+        :param latlon: Set as True if input coordinates are in lat/lon.
+        :type latlon: boolean
+        :param bands: Bands to extract for MultiBandRaster objects. Can be an int, list, tuple, numpy array or 'all' to extract all bands (Default is first band).
+
+        :returns: interpolated raster values, same shape as x and y
+        :rtype: np.array
+
+        """
+
+        nBands = self.ds.RasterCount
+        if (bands=='all') & (nBands>1):
+            bands = np.arange(nBands+1)
+            
+        # Get x,y coordinates in the matrix grid
+        xi, yi = self.coord_to_px(x,y,latlon=latlon,rounded=True)
+
+        # Case coordinates are not an array
+        if np.rank(xi)<1:
+            xi = np.array([xi,])
+            yi = np.array([yi,])
+
+        # Convert to int for call in ReadAsArray
+        xi = np.int32(xi)
+        yi = np.int32(yi)
+        
+        # Check that pixel location is not outside image dimensions
+        if np.any(xi<0) or np.any(xi>=self.nx) or np.any(yi<0) or np.any(yi>=self.ny):
+            if warning==True:
+                print('Warning : some of the coordinates are not in dataset extent -> extrapolated value set to 0')
+
+
+        #interpolated data
+        if nBands==1:
+            b = self.ds.GetRasterBand(1)
+            z_interp = np.array([b.ReadAsArray(int(xp),int(yp),1,1)[0,0] for (xp,yp) in zip(xi,yi)])
+
+        elif nBands>1:
+            if type(bands)==int:
+                b = self.ds.GetRasterBand(band)
+                z_interp = np.array([b.ReadAsArray(int(xp),int(yp),1,1)[0,0] for (xp,yp) in zip(xi,yi)])
+                
+            elif (type(bands)==list) or (type(bands)==tuple) or (type(bands)==np.ndarray):
+                z_interp = np.nan*np.zeros((len(xi),len(bands)),dtype='float32')
+                for k in xrange(len(bands)):
+                    b = self.ds.GetRasterBand(band[k])
+                    z_interp[:,k] = np.array([b.ReadAsArray(int(xp),int(yp),1,1)[0,0] for (xp,yp) in zip(xi,yi)])
+
+            else:
+                print "ERROR: argument bands must be of type int, list, tuple or numpy.ndarray"
+                
+        else:
+            print "ERROR: Wrong number of bands: %i" %nBands
+            
+        return z_interp
+
 
 
     def save_geotiff(self,filename, dtype=gdal.GDT_Float32, **kwargs):
