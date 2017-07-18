@@ -377,6 +377,11 @@ class __Raster:
 
         """
 
+        # Convert list and tuple into numpy.array
+        if isinstance(x,tuple) or isinstance(x,list):
+            x = np.array(x)
+            y = np.array(y)
+            
         # Convert coordinates to map system if provided in lat/lon and image
         # is projected (rather than geographic)
         if latlon == True and self.proj != None:
@@ -822,17 +827,15 @@ class __Raster:
 
 
 
-    def interp(self,x,y,order=1,latlon=False,band=1):
+    def interp(self,x,y,order=1,latlon=False,bands=0,warning=True):
         """
-        Interpolate raster at points (x,y). 
-
-        Values are extracted from self.r.
+        Interpolate raster at points (x,y). Values are extracted from self.r, which means that the data must be loaded in memory with self.read(...).
 
         x,y may be either in native coordinate system of raster or lat/lon.
         
         .. warning:: For now, values are considered as known at the \
         upper-left corner, whereas it should be in the centre of the cell.
-
+        
         :param x: x coordinate(s) to convert.
         :type x: float, np.array
         :param y: y coordinate(s) to convert.
@@ -843,12 +846,16 @@ class __Raster:
         :type order: int
         :param latlon: Set as True if input coordinates are in lat/lon.
         :type latlon: boolean
-
+        :param bands: Bands to extract for MultiBandRaster objects. Can be an int, list, tuple, numpy array or 'all' to extract all bands (Default is first band).
+        :params warning: bool, if set to True, will display a warning when the coordinates fall outside the range
         :returns: interpolated raster values, same shape as x and y
         :rtype: np.array
 
         """
 
+        if (bands=='all') & (self.r.ndim==3):
+            bands = np.arange(self.r.shape[2])
+            
         # Get x,y coordinates in the matrix grid
         xpx1, ypx1 = self.coord_to_px(x,y,latlon=latlon,rounded=False)
         xi = xpx1 #- self.x0
@@ -860,15 +867,24 @@ class __Raster:
             yi = np.array([yi,])
             
         # Check that pixel location is not outside image dimensions
-        if np.any(xi<0) or np.any(xi>=self.ny) or np.any(yi<0) or np.any(y>=self.nx):
-            print('Warning : some of the coordinates are not in dataset extent -> extrapolated value set to 0')
+        if np.any(xi<0) or np.any(xi>=self.nx) or np.any(yi<0) or np.any(yi>=self.ny):
+            if warning==True:
+                print('Warning : some of the coordinates are not in dataset extent -> extrapolated value set to 0')
 
 
         #interpolated data
         if self.r.ndim==2:
             z_interp = ndimage.map_coordinates(self.r, [yi, xi],order=order)
         elif self.r.ndim==3:
-            z_interp = ndimage.map_coordinates(self.r[:,:,band], [yi, xi],order=order)
+            if type(bands)==int:
+                z_interp = ndimage.map_coordinates(self.r[:,:,bands], [yi, xi],order=order)
+            elif (type(bands)==list) or (type(bands)==tuple) or (type(bands)==np.ndarray):
+                z_interp = np.nan*np.zeros((len(xi),len(bands)),dtype='float32')
+                for k in xrange(len(bands)):
+                    z_interp[:,k] = ndimage.map_coordinates(self.r[:,:,bands[k]], [yi, xi],order=order)
+            else:
+                print "ERROR: argument bands must be of type int, list, tuple or numpy.ndarray"
+                
         else:
             print "ERROR: Dimension of self.r must be 2 or 3"
             
