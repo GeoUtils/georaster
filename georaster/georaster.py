@@ -317,8 +317,18 @@ class __Raster:
 
         """
         if self.proj != None:
-            left,bottom = self.proj(self.extent[0], self.extent[2], inverse=True)
-            right,top = self.proj(self.extent[1], self.extent[3], inverse=True)
+            xmin,xmax, ymin, ymax = self.extent
+            corners = [(xmin,ymin), (xmin,ymax), (xmax,ymax), (xmax,ymin)]
+            left, bottom = np.inf, np.inf
+            right, top = -np.inf, -np.inf
+            for c in corners:
+                lon, lat = self.proj(c[0],c[1], inverse=True)
+                left = min(left,lon)
+                bottom = min(bottom, lat)
+                right = max(right, lon)
+                top = max(top, lat)
+            #left,bottom = self.proj(self.extent[0], self.extent[2], inverse=True)
+            #right,top = self.proj(self.extent[1], self.extent[3], inverse=True)
             return (left, right, bottom, top)
         else:
             return self.extent
@@ -377,6 +387,11 @@ class __Raster:
 
         """
 
+        # Convert list and tuple into numpy.array
+        if isinstance(x,tuple) or isinstance(x,list):
+            x = np.array(x)
+            y = np.array(y)
+            
         # Convert coordinates to map system if provided in lat/lon and image
         # is projected (rather than geographic)
         if latlon == True and self.proj != None:
@@ -439,10 +454,10 @@ class __Raster:
             return self.ds.GetRasterBand(band).ReadAsArray()  
         else:
             arr = self.ds.GetRasterBand(band).ReadAsArray(
-                buf_xsize=int(self.nx/downsampl), 
-                buf_ysize=int(self.ny/downsampl))
-            self.nx = int(self.nx/downsampl)
-            self.ny = int(self.ny/downsampl)
+                buf_xsize=int(self.ds.RasterXSize/downsampl), 
+                buf_ysize=int(self.ds.RasterYSize/downsampl))
+            self.nx = int(self.ds.RasterXSize/downsampl)
+            self.ny = int(self.ds.RasterYSize/downsampl)
             self.xres = self.xres*downsampl
             self.yres = self.yres*downsampl
             return arr
@@ -822,17 +837,15 @@ class __Raster:
 
 
 
-    def interp(self,x,y,order=1,latlon=False,band=1):
+    def interp(self,x,y,order=1,latlon=False,bands=0,warning=True):
         """
-        Interpolate raster at points (x,y). 
-
-        Values are extracted from self.r.
+        Interpolate raster at points (x,y). Values are extracted from self.r, which means that the data must be loaded in memory with self.read(...).
 
         x,y may be either in native coordinate system of raster or lat/lon.
         
         .. warning:: For now, values are considered as known at the \
         upper-left corner, whereas it should be in the centre of the cell.
-
+        
         :param x: x coordinate(s) to convert.
         :type x: float, np.array
         :param y: y coordinate(s) to convert.
@@ -843,16 +856,20 @@ class __Raster:
         :type order: int
         :param latlon: Set as True if input coordinates are in lat/lon.
         :type latlon: boolean
-
+        :param bands: Bands to extract for MultiBandRaster objects. Can be an int, list, tuple, numpy array or 'all' to extract all bands (Default is first band).
+        :params warning: bool, if set to True, will display a warning when the coordinates fall outside the range
         :returns: interpolated raster values, same shape as x and y
         :rtype: np.array
 
         """
 
+        if (bands=='all') & (self.r.ndim==3):
+            bands = np.arange(self.r.shape[2])
+            
         # Get x,y coordinates in the matrix grid
         xpx1, ypx1 = self.coord_to_px(x,y,latlon=latlon,rounded=False)
-        xi = xpx1 - self.x0
-        yi = ypx1 - self.y0
+        xi = xpx1 #- self.x0
+        yi = ypx1 #- self.y0
 
         # Case coordinates are not an array
         if np.rank(xi)<1:
@@ -860,13 +877,99 @@ class __Raster:
             yi = np.array([yi,])
             
         # Check that pixel location is not outside image dimensions
-        if np.any(xi<0) or np.any(xi>=self.ny) or np.any(yi<0) or np.any(y>=self.nx):
-            print('Warning : some of the coordinates are not in dataset extent -> extrapolated value set to 0')
+        if np.any(xi<0) or np.any(xi>=self.nx) or np.any(yi<0) or np.any(yi>=self.ny):
+            if warning==True:
+                print('Warning : some of the coordinates are not in dataset extent -> extrapolated value set to 0')
 
 
         #interpolated data
-        z_interp = ndimage.map_coordinates(self.r, [yi, xi],order=order)
+        if self.r.ndim==2:
+            z_interp = ndimage.map_coordinates(self.r, [yi, xi],order=order)
+        elif self.r.ndim==3:
+            if type(bands)==int:
+                z_interp = ndimage.map_coordinates(self.r[:,:,bands], [yi, xi],order=order)
+            elif (type(bands)==list) or (type(bands)==tuple) or (type(bands)==np.ndarray):
+                z_interp = np.nan*np.zeros((len(xi),len(bands)),dtype='float32')
+                for k in xrange(len(bands)):
+                    z_interp[:,k] = ndimage.map_coordinates(self.r[:,:,bands[k]], [yi, xi],order=order)
+            else:
+                print "ERROR: argument bands must be of type int, list, tuple or numpy.ndarray"
+                
+        else:
+            print "ERROR: Dimension of self.r must be 2 or 3"
+            
+        return z_interp
 
+    
+    def interp_from_ds(self,x,y,order=1,latlon=False,bands=0):
+        """
+        Interpolate raster at points (x,y). Values are extracted from the dataset directly, so no need to load it, but it will probably take longer.
+        !! Warning : Right now, only integer pixel values can be extracted, subpixel interpolation must be implemented. !!
+
+        x,y may be either in native coordinate system of raster or lat/lon.
+        
+        
+        :param x: x coordinate(s) to convert.
+        :type x: float, np.array
+        :param y: y coordinate(s) to convert.
+        :type y: float, np.array
+        :param order: order of the spline interpolation (range 0-5), \
+          0=nearest-neighbor, 1=bilinear (default), 2-5 does not seem to \ 
+          work with NaNs.
+        :type order: int
+        :param latlon: Set as True if input coordinates are in lat/lon.
+        :type latlon: boolean
+        :param bands: Bands to extract for MultiBandRaster objects. Can be an int, list, tuple, numpy array or 'all' to extract all bands (Default is first band).
+
+        :returns: interpolated raster values, same shape as x and y
+        :rtype: np.array
+
+        """
+
+        nBands = self.ds.RasterCount
+        if (bands=='all') & (nBands>1):
+            bands = np.arange(nBands+1)
+            
+        # Get x,y coordinates in the matrix grid
+        xi, yi = self.coord_to_px(x,y,latlon=latlon,rounded=True)
+
+        # Case coordinates are not an array
+        if np.rank(xi)<1:
+            xi = np.array([xi,])
+            yi = np.array([yi,])
+
+        # Convert to int for call in ReadAsArray
+        xi = np.int32(xi)
+        yi = np.int32(yi)
+        
+        # Check that pixel location is not outside image dimensions
+        if np.any(xi<0) or np.any(xi>=self.nx) or np.any(yi<0) or np.any(yi>=self.ny):
+            if warning==True:
+                print('Warning : some of the coordinates are not in dataset extent -> extrapolated value set to 0')
+
+
+        #interpolated data
+        if nBands==1:
+            b = self.ds.GetRasterBand(1)
+            z_interp = np.array([b.ReadAsArray(int(xp),int(yp),1,1)[0,0] for (xp,yp) in zip(xi,yi)])
+
+        elif nBands>1:
+            if type(bands)==int:
+                b = self.ds.GetRasterBand(band)
+                z_interp = np.array([b.ReadAsArray(int(xp),int(yp),1,1)[0,0] for (xp,yp) in zip(xi,yi)])
+                
+            elif (type(bands)==list) or (type(bands)==tuple) or (type(bands)==np.ndarray):
+                z_interp = np.nan*np.zeros((len(xi),len(bands)),dtype='float32')
+                for k in xrange(len(bands)):
+                    b = self.ds.GetRasterBand(band[k])
+                    z_interp[:,k] = np.array([b.ReadAsArray(int(xp),int(yp),1,1)[0,0] for (xp,yp) in zip(xi,yi)])
+
+            else:
+                print "ERROR: argument bands must be of type int, list, tuple or numpy.ndarray"
+                
+        else:
+            print "ERROR: Wrong number of bands: %i" %nBands
+            
         return z_interp
 
 
@@ -1093,7 +1196,7 @@ class MultiBandRaster(__Raster):
 
 
     def __init__(self,ds_filename,load_data=True,bands='all',latlon=True,
-                 spatial_ref=None,geo_transform=None):
+                 spatial_ref=None,geo_transform=None,downsampl=1):
         """ Load a multi-band raster.
 
         Parameters:
@@ -1112,7 +1215,7 @@ class MultiBandRaster(__Raster):
             geo_transform : a Geographic Transform tuple of the form 
                             (top left x, w-e cell size, 0, top left y, 0, 
                              n-s cell size (-ve))
-
+            downsampl : default 1. Used to down-sample the image when loading it. 
         """
 
         self._load_ds(ds_filename,spatial_ref=spatial_ref,
@@ -1132,11 +1235,11 @@ class MultiBandRaster(__Raster):
 
             # Loading whole dimensions of raster
             if load_data == True:
-                self.r = np.zeros((self.ds.RasterYSize,self.ds.RasterXSize,
+                self.r = np.zeros((self.ds.RasterYSize/downsampl,self.ds.RasterXSize/downsampl,
                                len(self.bands)))
                 k = 0
                 for b in self.bands:
-                    self.r[:,:,k] = self.read_single_band(band=b)
+                    self.r[:,:,k] = self.read_single_band(band=b,downsampl=downsampl)
                     k += 1
 
             # Loading geographic subset of raster
@@ -1144,17 +1247,21 @@ class MultiBandRaster(__Raster):
                 if len(load_data) == 4:
                     k = 0
                     for b in self.bands:
+
                         # If first band, create a storage object
                         if self.r == None:
                             (tmp,self.extent) = self.read_single_band_subset(load_data,
-                                        latlon=latlon,extent=True,band=b,update_info=True)
+                                                                             latlon=latlon,extent=True,band=b,update_info=False, downsampl=downsampl)
                             self.r = np.zeros((tmp.shape[0],tmp.shape[1],
                                len(self.bands)))
                             self.r[:,:,k] = tmp
                         # Store subsequent bands in kth dimension of store.
-                        else:
+                        elif b!=self.bands[-1]:
                             self.r[:,:,k] = self.read_single_band_subset(load_data,
-                                        latlon=latlon,band=b)
+                                                                         latlon=latlon,band=b,downsampl=downsampl)
+                        else:  #update infos at last iteration
+                            self.r[:,:,k] = self.read_single_band_subset(load_data, update_info=True, latlon=latlon,band=b,downsampl=downsampl)
+                            
                         k += 1
 
         # Don't load any data
@@ -1198,7 +1305,7 @@ class MultiBandRaster(__Raster):
 
 
 def simple_write_geotiff(outfile,raster,geoTransform,
-    wkt=None,proj4=None,mask=None,dtype=gdal.GDT_Float32, nodata_value=-999, metadata=None):
+                         wkt=None,proj4=None,mask=None,dtype=gdal.GDT_Float32, nodata_value=-999, metadata=None, compress=None):
     """ Save a GeoTIFF.
 
     One of proj4 or wkt are required.
@@ -1219,6 +1326,7 @@ def simple_write_geotiff(outfile,raster,geoTransform,
     :type nodata_value: float, int
     :param metadata: Metadata to be stored in the file. Pass a dictionnary with {key1:value1, key2:value2...}
     :type metadata: dict
+    :param compress: Compression type to reduce file size. Three lossless compression exist in GDAL: LZW (high-compression, slow I/O), Packbits (low compression, high I/O), Deflate (medium compression, medium I/O). If loss is not a problem, JPEG has also very high performances. The choice is up to you! See http://www.digital-geography.com/geotiff-compression-comparison/#.WW1KV47_lP4 for more infos.
 
     :returns: True or a GDAL memory raster.
     
@@ -1248,7 +1356,10 @@ def simple_write_geotiff(outfile,raster,geoTransform,
     else:
         driver = gdal.GetDriverByName('MEM')
 
-    dst_ds = driver.Create(outfile, xdim, ydim, nbands, dtype)
+    if compress==None:
+        dst_ds = driver.Create(outfile, xdim, ydim, nbands, dtype)
+    else:
+        dst_ds = driver.Create(outfile, xdim, ydim, nbands, dtype, options = [ 'COMPRESS=%s' %compress ])
     # Top left x, w-e pixel res, rotation, top left y, rotation, n-s pixel res
     dst_ds.SetGeoTransform(geoTransform)
       

@@ -7,3 +7,4 @@
 from .georaster import SingleBandRaster
 from .georaster import MultiBandRaster
 from .georaster import simple_write_geotiff
+from .georaster import __Raster
