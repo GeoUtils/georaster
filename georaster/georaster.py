@@ -738,7 +738,7 @@ class __Raster:
 
         print('WARNING: This function is deprecated and will be removed in \
             a future version of GeoRaster. Use georaster.srs.GetUTMZone() \
-            instead'.)
+            instead.')
         return self.srs.GetUTMZone()
         
 
@@ -1020,13 +1020,15 @@ class __Raster:
 
         # Create a polygon of the envelope of the first image
         xmin, xmax, ymin, ymax = self.extent
-        wkt = "POLYGON ((%f %f, %f %f, %f %f, %f %f, %f %f))" %(xmin,ymin,xmin,ymax,xmax,ymax,xmax,ymin,xmin,ymin)
+        wkt = "POLYGON ((%f %f, %f %f, %f %f, %f %f, %f %f))" \
+            %(xmin,ymin,xmin,ymax,xmax,ymax,xmax,ymin,xmin,ymin)
         poly1 = ogr.CreateGeometryFromWkt(wkt)
 
         # Create a polygon of the envelope of the second image
         img = SingleBandRaster(filename, load_data=False)
         xmin, xmax, ymin, ymax = img.extent
-        wkt = "POLYGON ((%f %f, %f %f, %f %f, %f %f, %f %f))" %(xmin,ymin,xmin,ymax,xmax,ymax,xmax,ymin,xmin,ymin)
+        wkt = "POLYGON ((%f %f, %f %f, %f %f, %f %f, %f %f))" \
+            %(xmin,ymin,xmin,ymax,xmax,ymax,xmax,ymin,xmin,ymin)
         poly2 = ogr.CreateGeometryFromWkt(wkt)
 
         # Compute intersection envelope
@@ -1300,7 +1302,8 @@ class MultiBandRaster(__Raster):
 
 
 def simple_write_geotiff(outfile,raster,geoTransform,
-                         wkt=None,proj4=None,mask=None,dtype=gdal.GDT_Float32, nodata_value=-999, metadata=None, compress=None):
+                         wkt=None,proj4=None,mask=None,dtype=gdal.GDT_Float32, 
+                         nodata_value=-999, metadata=None, compress=None):
     """ Save a GeoTIFF.
 
     One of proj4 or wkt are required.
@@ -1319,9 +1322,17 @@ def simple_write_geotiff(outfile,raster,geoTransform,
     :type dtype: int
     :param nodata_value: The value in the raster to set as the NoData value
     :type nodata_value: float, int
-    :param metadata: Metadata to be stored in the file. Pass a dictionnary with {key1:value1, key2:value2...}
+    :param metadata: Metadata to be stored in the file. Pass a dictionary 
+        with {key1:value1, key2:value2...}
     :type metadata: dict
-    :param compress: Compression type to reduce file size. Three lossless compression exist in GDAL: LZW (high-compression, slow I/O), Packbits (low compression, high I/O), Deflate (medium compression, medium I/O). If loss is not a problem, JPEG has also very high performances. The choice is up to you! See http://www.digital-geography.com/geotiff-compression-comparison/#.WW1KV47_lP4 for more infos.
+    :param compress: Compression type to reduce file size. Three lossless 
+        compression exist in GDAL: LZW (high-compression, slow I/O), 
+        Packbits (low compression, high I/O), Deflate (medium compression, 
+        medium I/O). If loss is not a problem, JPEG has also very high 
+        performances. The choice is up to you! See 
+        http://www.digital-geography.com/geotiff-compression-comparison/#.WW1KV47_lP4 
+        for more information.
+    :type compress: str
 
     :returns: True or a GDAL memory raster.
     
@@ -1354,7 +1365,8 @@ def simple_write_geotiff(outfile,raster,geoTransform,
     if compress==None:
         dst_ds = driver.Create(outfile, xdim, ydim, nbands, dtype)
     else:
-        dst_ds = driver.Create(outfile, xdim, ydim, nbands, dtype, options = [ 'COMPRESS=%s' %compress ])
+        dst_ds = driver.Create(outfile, xdim, ydim, nbands, dtype,
+            options=[ 'COMPRESS=%s' %compress ])
     # Top left x, w-e pixel res, rotation, top left y, rotation, n-s pixel res
     dst_ds.SetGeoTransform(geoTransform)
       
