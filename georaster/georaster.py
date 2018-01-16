@@ -453,11 +453,13 @@ class __Raster:
         if downsampl == 1:
             return self.ds.GetRasterBand(band).ReadAsArray()  
         else:
+            down_x = int(np.ceil(self.ds.RasterXSize/downsampl))
+            down_y = int(np.ceil(self.ds.RasterYSize/downsampl))
             arr = self.ds.GetRasterBand(band).ReadAsArray(
-                buf_xsize=int(self.ds.RasterXSize/downsampl), 
-                buf_ysize=int(self.ds.RasterYSize/downsampl))
-            self.nx = int(self.ds.RasterXSize/downsampl)
-            self.ny = int(self.ds.RasterYSize/downsampl)
+                buf_xsize=down_x, 
+                buf_ysize=down_y)
+            self.nx = down_x
+            self.ny = down_y
             self.xres = self.xres*downsampl
             self.yres = self.yres*downsampl
             return arr
@@ -533,13 +535,15 @@ class __Raster:
                 int(x_offset),
                 int(y_offset))
         else:
+            down_x = int(np.ceil(self.ds.RasterXSize/downsampl))
+            down_y = int(np.ceil(self.ds.RasterYSize/downsampl))
             arr = self.ds.GetRasterBand(band).ReadAsArray(
                 int(xpx1),
                 int(ypx1),
                 int(x_offset),
                 int(y_offset),
-                buf_xsize=int(x_offset/downsampl),
-                buf_ysize=int(y_offset/downsampl))
+                buf_xsize=down_x,
+                buf_ysize=down_y)
 
         # Update image size
         # (top left x, w-e px res, 0, top left y, 0, n-s px res)
@@ -549,7 +553,7 @@ class __Raster:
         subset_extent = (left, left + x_offset*trans[1], 
                    top + y_offset*trans[5], top)
         if update_info == True:
-            self.nx, self.ny = int(x_offset),int(y_offset) #arr.shape
+            self.nx, self.ny = int(np.ceil(x_offset)),int(np.ceil(y_offset)) #arr.shape
             self.x0 = int(xpx1)
             self.y0 = int(ypx1)
             self.extent = subset_extent
@@ -1232,7 +1236,7 @@ class MultiBandRaster(__Raster):
 
             # Loading whole dimensions of raster
             if load_data == True:
-                self.r = np.zeros((self.ds.RasterYSize/downsampl,self.ds.RasterXSize/downsampl,
+                self.r = np.zeros((int(np.ceil(self.ds.RasterYSize/downsampl)),int(np.ceil(self.ds.RasterXSize/downsampl)),
                                len(self.bands)))
                 k = 0
                 for b in self.bands:
