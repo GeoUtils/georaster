@@ -505,6 +505,12 @@ class __Raster:
         """
         
         left,right,bottom,top = bounds
+
+        # Compensate for the difference between extent and coordinates of the corners
+        left += self.xres/2.
+        right += self.xres/2.
+        bottom += self.yres/2.
+        top += self.yres/2.
         
         # Unlike the bounds tuple, which specifies bottom left and top right
         # coordinates, here we need top left and bottom right for the numpy
