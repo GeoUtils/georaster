@@ -368,7 +368,7 @@ class __Raster:
 
 
 
-    def coord_to_px(self, x, y, latlon=False, rounded=True, check_valid=True):
+    def coord_to_px(self, x, y, latlon=False, rounded=True, check_valid=True, cell_type='center'):
         """ Convert projected or geographic coordinates into pixel coordinates of raster.
 
         :param x: x (longitude) coordinate to convert.
@@ -381,6 +381,8 @@ class __Raster:
         :type rounded: boolean
         :param check_valid: Check that all pixels are in the valid range. 
         :type check_valid: boolean
+        :param cell_type: Type of cell considered, 'center' if the coordinate is for the center of the cell, 'corner' if it is as the top left corner
+        :type cell_type: string
 
         :returns: corresponding pixel coordinates (x, y) of provided projected or geographic coordinates.
         :rtype: tuple
@@ -398,8 +400,9 @@ class __Raster:
             x,y = self.proj(x,y)
 
         # Shift to the centre of the pixel
-        x = np.array(x-self.xres/2)
-        y = np.array(y-self.yres/2)
+        if cell_type=='center':
+            x = np.array(x-self.xres/2)
+            y = np.array(y-self.yres/2)
 
         g0, g1, g2, g3, g4, g5 = self.trans
         if g2 == 0:
@@ -505,12 +508,13 @@ class __Raster:
         """
         
         left,right,bottom,top = bounds
-        
+
         # Unlike the bounds tuple, which specifies bottom left and top right
         # coordinates, here we need top left and bottom right for the numpy
-        # readAsArray implementation.    
-        xpx1,ypx1 = self.coord_to_px(left,bottom,latlon=latlon)
-        xpx2,ypx2 = self.coord_to_px(right,top,latlon=latlon)
+        # readAsArray implementation.
+        # cell_type='corner' because coordinates are extent, therefore corner coordinates rather than cell center.
+        xpx1,ypx1 = self.coord_to_px(left,bottom,latlon=latlon,cell_type='corner')
+        xpx2,ypx2 = self.coord_to_px(right,top,latlon=latlon,cell_type='corner')
         
         if xpx1 > xpx2:
             xpx1, xpx2 = xpx2, xpx1
