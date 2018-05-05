@@ -762,9 +762,9 @@ class __Raster:
 
 
 
-    def reproject(self,target_srs,nx,ny,xmin,ymax,xres,yres,
-            dtype=gdal.GDT_Float32,nodata=None,
-            interp_type=gdal.GRA_NearestNeighbour,progress=False):
+    def reproject(self,target_srs,nx=None,ny=None,xmin=None,ymax=None,
+                  xres=None,yres=None,dtype=gdal.GDT_Float32,nodata=None,
+                  interp_type=gdal.GRA_NearestNeighbour,progress=False):
         """
         Reproject and resample dataset into another spatial reference system.
 
@@ -804,6 +804,27 @@ class __Raster:
         :rtype: georaster.SingleBandRaster, georaster.MultiBandRaster            
 
         """
+
+        # Calculate defaults arguments
+        if (xmin==None) & (ymax==None):
+            tf = osr.CoordinateTransformation(self.srs,target_srs)
+            xll, xur, yll, yur = self.extent
+            xmin, ymax, _ = tf.TransformPoint(xll,yur)
+            xmax, ymin, _ = tf.TransformPoint(xur,yll)
+        if (xres==None) & (yres==None):
+            tf = osr.CoordinateTransformation(self.srs,target_srs)
+            xll, xur, yll, yur = self.extent
+            x0, y0, _ = tf.TransformPoint(xll,yur)
+            x1, y1, _ = tf.TransformPoint(xll+self.xres,yur+self.yres)
+            xres = x1-x0
+            yres = y1-y0
+        if nx==None:
+            nx = int(np.ceil((xmax-xmin)/xres))
+            #nx = self.nx
+        if ny==None:
+            ny = int(np.ceil((ymax-ymin)/np.abs(yres)))
+            #ny = self.ny
+
         # Create an in-memory raster
         mem_drv = gdal.GetDriverByName( 'MEM' )
         target_ds = mem_drv.Create('', nx, ny, 1, dtype)
