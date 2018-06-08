@@ -37,7 +37,6 @@ the following attributes:
 
     class.extent :  tuple of the corners of the dataset in native coordinate
                     system, as (left,right,bottom,top).
-
     class.trans : GeoTransform tuple of the dataset.
 
 Additionally, georeferencing information which requires calculation 
@@ -564,7 +563,8 @@ class __Raster:
 
 
     def value_at_coords(self,x,y,latlon=False,band=None,
-                        window=None,return_window=False):
+                        window=None,return_window=False,
+                        reducer_function=np.nanmean):
         """ Extract the pixel value(s) at the specified coordinates.
         
         Extract pixel value of each band in dataset at the specified 
@@ -617,7 +617,7 @@ class __Raster:
             """ Check if valid value has been extracted """
             if type(value) == np.ndarray:
                 if window != None:
-                    value = nanmean(value.flatten())
+                    value = reducer_function(value.flatten())
                 else:
                     value = value[0,0]
             else:
@@ -656,8 +656,9 @@ class __Raster:
             # Deal with MultiBandRaster case
             else:    
                 value = {}
+                win = {}
                 for b in range(1,self.ds.RasterCount+1):
-                    d = self.ds.GetRasterBand(b).ReadAsArray(xpx,ypx,xo,yo)
+                    data = self.ds.GetRasterBand(b).ReadAsArray(xpx,ypx,xo,yo)
                     val = format_value(data)
                     # Store according to GDAL band numbers
                     value[b] = val
@@ -1222,7 +1223,7 @@ class MultiBandRaster(__Raster):
 
             # First check which bands to load
             if bands == 'all':
-                self.bands = range(1,self.ds.RasterCount+1)
+                self.bands = np.arange(1,self.ds.RasterCount+1)
             else:
                 if isinstance(bands,tuple):
                     self.bands = bands
@@ -1232,8 +1233,8 @@ class MultiBandRaster(__Raster):
 
             # Loading whole dimensions of raster
             if load_data == True:
-                self.r = np.zeros((self.ds.RasterYSize/downsampl,self.ds.RasterXSize/downsampl,
-                               len(self.bands)))
+                self.r = np.zeros((int(self.ds.RasterYSize/downsampl),int(self.ds.RasterXSize/downsampl),
+                               int(len(self.bands))))
                 k = 0
                 for b in self.bands:
                     self.r[:,:,k] = self.read_single_band(band=b,downsampl=downsampl)
