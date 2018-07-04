@@ -1033,7 +1033,7 @@ class __Raster:
 
     def intersection(self,filename):
         """ Return coordinates of intersection between this image and another.
-
+        For now, only implemented for images with same projection, but a test is used to check whether this is the case.
         :param filename : path to the second image (or another GeoRaster instance)
         :type filename: str, georaster.__Raster
         
@@ -1043,6 +1043,28 @@ class __Raster:
 
         """
 
+        # Check that both files have the same projection
+        img = SingleBandRaster(filename, load_data=False)
+        code1 = self.srs.GetAuthorityCode(None)  # Get EPSG codes
+        code2 = img.srs.GetAuthorityCode(None)
+
+        if ((code1==None) or (code2==None)):  # If code could not be estimated
+            print("Could not identify images projection EPSG, trying with PROJ4")
+            proj1 = self.srs.ExportToProj4()
+            proj2 = img.srs.ExportToProj4()
+            if proj1==proj2:
+                pass
+            else:
+                print("Projections of images seem to be different, case not implemented:\n%s = %s\n%s = %s" %(self.ds_file,proj1,img.ds_file,proj2))
+                return 0
+        else:
+            if code1==code2:
+                pass
+            else:
+                print("Projections of images seem to be different, case not implemented:\n%s = EPSG:%s\n%s = EPSG:%s" %(self.ds_file,proj1,img.ds_file,proj2))
+                return 0
+                
+        
         # Create a polygon of the envelope of the first image
         xmin, xmax, ymin, ymax = self.extent
         wkt = "POLYGON ((%f %f, %f %f, %f %f, %f %f, %f %f))" \
@@ -1050,7 +1072,6 @@ class __Raster:
         poly1 = ogr.CreateGeometryFromWkt(wkt)
 
         # Create a polygon of the envelope of the second image
-        img = SingleBandRaster(filename, load_data=False)
         xmin, xmax, ymin, ymax = img.extent
         wkt = "POLYGON ((%f %f, %f %f, %f %f, %f %f, %f %f))" \
             %(xmin,ymin,xmin,ymax,xmax,ymax,xmax,ymin,xmin,ymin)
