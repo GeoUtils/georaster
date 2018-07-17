@@ -1349,7 +1349,7 @@ class MultiBandRaster(__Raster):
 
 def simple_write_geotiff(outfile,raster,geoTransform,
                          wkt=None,proj4=None,mask=None,dtype=gdal.GDT_Float32, 
-                         nodata_value=-999, metadata=None, compress=None):
+                         nodata_value=-999, metadata=None, options=None):
     """ Save a GeoTIFF.
 
     One of proj4 or wkt are required.
@@ -1371,14 +1371,11 @@ def simple_write_geotiff(outfile,raster,geoTransform,
     :param metadata: Metadata to be stored in the file. Pass a dictionary 
         with {key1:value1, key2:value2...}
     :type metadata: dict
-    :param compress: Compression type to reduce file size. Three lossless 
-        compression exist in GDAL: LZW (high-compression, slow I/O), 
-        Packbits (low compression, high I/O), Deflate (medium compression, 
-        medium I/O). If loss is not a problem, JPEG has also very high 
-        performances. The choice is up to you! See 
-        http://www.digital-geography.com/geotiff-compression-comparison/#.WW1KV47_lP4 
-        for more information.
-    :type compress: str
+    :param options: Additional creation options, see e.g. http://www.gdal.org/frmt_gtiff.html. 
+        Pass a list of key=value ['key1=value1','key2='value2'...]
+        Examples of options are ['COMPRESS=LZW', 'TILED=YES', 'BLOCKXSIZE=256'...]
+        For compressions, see http://www.digital-geography.com/geotiff-compression-comparison/#.WW1KV47_lP4 
+    :type options: list
 
     :returns: True or a GDAL memory raster.
     
@@ -1408,11 +1405,11 @@ def simple_write_geotiff(outfile,raster,geoTransform,
     else:
         driver = gdal.GetDriverByName('MEM')
 
-    if compress==None:
+    if options==None:
         dst_ds = driver.Create(outfile, xdim, ydim, nbands, dtype)
     else:
         dst_ds = driver.Create(outfile, xdim, ydim, nbands, dtype,
-            options=[ 'COMPRESS=%s' %compress ])
+            options=options)
     # Top left x, w-e pixel res, rotation, top left y, rotation, n-s pixel res
     dst_ds.SetGeoTransform(geoTransform)
       
