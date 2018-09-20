@@ -204,20 +204,20 @@ class __Raster:
             self.ds_file = ds_filename.GetDescription()
 
         # Check that some georeferencing information is available
-        if self.ds.GetProjection() == '' and spatial_ref == None:
+        if self.ds.GetProjection() == '' and spatial_ref is None:
             warn('Warning : No georeferencing information associated to image!')
 
         # If user attempting to use their own georeferencing then make sure
         # that they have provided both required arguments
-        if (spatial_ref == None and geo_transform != None) or \
-           (spatial_ref != None and geo_transform == None):
+        if (spatial_ref is None and geo_transform != None) or \
+           (spatial_ref != None and geo_transform is None):
             print('You must set both spatial_ref and geo_transform.')
             raise RuntimeError
 
 
         ## Start to load the geo-referencing ...
 
-        if spatial_ref == None:
+        if spatial_ref is None:
             # Use the georeferencing of the file
             self.trans = self.ds.GetGeoTransform()
             # Spatial Reference System
@@ -649,7 +649,7 @@ class __Raster:
         ypx = int(ypx)
 
         # Get values for all bands
-        if band == None:
+        if band is None:
 
             # Deal with SingleBandRaster case
             if self.ds.RasterCount == 1:
@@ -707,7 +707,7 @@ class __Raster:
             print("Xpixels and Ypixels must have the same size")
             return 1
 
-        if (Xpixels==None) & (Ypixels==None):
+        if (Xpixels is None) & (Ypixels is None):
             Xpixels = np.arange(self.nx)
             Ypixels = np.arange(self.ny)
             Xpixels, Ypixels = np.meshgrid(Xpixels,Ypixels)
@@ -806,22 +806,22 @@ class __Raster:
         """
 
         # Calculate defaults arguments
-        if (xmin==None) & (ymax==None):
+        if (xmin is None) & (ymax is None):
             tf = osr.CoordinateTransformation(self.srs,target_srs)
             xll, xur, yll, yur = self.extent
             xmin, ymax, _ = tf.TransformPoint(xll,yur)
             xmax, ymin, _ = tf.TransformPoint(xur,yll)
-        if (xres==None) & (yres==None):
+        if (xres is None) & (yres is None):
             tf = osr.CoordinateTransformation(self.srs,target_srs)
             xll, xur, yll, yur = self.extent
             x0, y0, _ = tf.TransformPoint(xll,yur)
             x1, y1, _ = tf.TransformPoint(xll+self.xres,yur+self.yres)
             xres = x1-x0
             yres = y1-y0
-        if nx==None:
+        if nx is None:
             nx = int(np.ceil((xmax-xmin)/xres))
             #nx = self.nx
-        if ny==None:
+        if ny is None:
             ny = int(np.ceil((ymax-ymin)/np.abs(yres)))
             #ny = self.ny
 
@@ -1048,7 +1048,7 @@ class __Raster:
         code1 = self.srs.GetAuthorityCode(None)  # Get EPSG codes
         code2 = img.srs.GetAuthorityCode(None)
 
-        if ((code1==None) or (code2==None)):  # If code could not be estimated
+        if ((code1 is None) or (code2 is None)):  # If code could not be estimated
             print("Could not identify images projection EPSG, trying with PROJ4")
             proj1 = self.srs.ExportToProj4()
             proj2 = img.srs.ExportToProj4()
@@ -1292,7 +1292,7 @@ class MultiBandRaster(__Raster):
                     for b in self.bands:
 
                         # If first band, create a storage object
-                        if self.r == None:
+                        if self.r is None:
                             (tmp,self.extent) = self.read_single_band_subset(load_data,
                                                                              latlon=latlon,extent=True,band=b,update_info=False, downsampl=downsampl)
                             self.r = np.zeros((tmp.shape[0],tmp.shape[1],
@@ -1334,7 +1334,7 @@ class MultiBandRaster(__Raster):
         """
 
         # Check that more than 1 band has been loaded into memory.
-        if self.bands == None:
+        if self.bands is None:
             raise AttributeError('No data have been loaded.')
         if len(self.bands) == 1:
             raise AttributeError('Only 1 band of data has been loaded.')
@@ -1386,7 +1386,7 @@ def simple_write_geotiff(outfile,raster,geoTransform,
     # Georeferencing sanity checks
     if wkt != None and proj4 != None:
         raise 'InputError: Both wkt and proj4 specified. Only specify one.'
-    if wkt == None and proj4 == None:
+    if wkt is None and proj4 is None:
         raise 'InputError: One of wkt or proj4 need to be specified.'
 
     # Check if the image is multi-band or not. 
@@ -1405,7 +1405,7 @@ def simple_write_geotiff(outfile,raster,geoTransform,
     else:
         driver = gdal.GetDriverByName('MEM')
 
-    if options==None:
+    if options is None:
         dst_ds = driver.Create(outfile, xdim, ydim, nbands, dtype)
     else:
         dst_ds = driver.Create(outfile, xdim, ydim, nbands, dtype,
@@ -1434,7 +1434,7 @@ def simple_write_geotiff(outfile,raster,geoTransform,
             dst_ds.GetRasterBand(1).GetMaskBand().WriteArray(mask)
 
     # Add metadata
-    if metadata!=None:
+    if metadata is not None:
         dst_ds.SetMetadata(metadata)
 
     if outfile != 'none':
