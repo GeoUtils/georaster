@@ -837,8 +837,8 @@ class __Raster:
     
         # Set the nodata value
         if nodata != None:
-            for b in range(1,self.ds.RasterCount+1):
-                inBand = self.ds.GetRasterBand(b)
+            for b in range(1,target_ds.RasterCount+1):
+                inBand = target_ds.GetRasterBand(b)
                 inBand.SetNoDataValue(nodata)
     
         # Perform the projection/resampling 
