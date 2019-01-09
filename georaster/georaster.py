@@ -204,20 +204,20 @@ class __Raster:
             self.ds_file = ds_filename.GetDescription()
 
         # Check that some georeferencing information is available
-        if self.ds.GetProjection() == '' and spatial_ref == None:
+        if self.ds.GetProjection() == '' and spatial_ref is None:
             warn('Warning : No georeferencing information associated to image!')
 
         # If user attempting to use their own georeferencing then make sure
         # that they have provided both required arguments
-        if (spatial_ref == None and geo_transform != None) or \
-           (spatial_ref != None and geo_transform == None):
+        if (spatial_ref is None and geo_transform != None) or \
+           (spatial_ref != None and geo_transform is None):
             print('You must set both spatial_ref and geo_transform.')
             raise RuntimeError
 
 
         ## Start to load the geo-referencing ...
 
-        if spatial_ref == None:
+        if spatial_ref is None:
             # Use the georeferencing of the file
             self.trans = self.ds.GetGeoTransform()
             # Spatial Reference System
@@ -649,7 +649,7 @@ class __Raster:
         ypx = int(ypx)
 
         # Get values for all bands
-        if band == None:
+        if band is None:
 
             # Deal with SingleBandRaster case
             if self.ds.RasterCount == 1:
@@ -707,7 +707,7 @@ class __Raster:
             print("Xpixels and Ypixels must have the same size")
             return 1
 
-        if (Xpixels==None) & (Ypixels==None):
+        if (Xpixels is None) & (Ypixels is None):
             Xpixels = np.arange(self.nx)
             Ypixels = np.arange(self.ny)
             Xpixels, Ypixels = np.meshgrid(Xpixels,Ypixels)
@@ -762,9 +762,9 @@ class __Raster:
 
 
 
-    def reproject(self,target_srs,nx,ny,xmin,ymax,xres,yres,
-            dtype=gdal.GDT_Float32,nodata=None,
-            interp_type=gdal.GRA_NearestNeighbour,progress=False):
+    def reproject(self,target_srs,nx=None,ny=None,xmin=None,ymax=None,
+                  xres=None,yres=None,dtype=gdal.GDT_Float32,nodata=None,
+                  interp_type=gdal.GRA_NearestNeighbour,progress=False):
         """
         Reproject and resample dataset into another spatial reference system.
 
@@ -804,6 +804,27 @@ class __Raster:
         :rtype: georaster.SingleBandRaster, georaster.MultiBandRaster            
 
         """
+
+        # Calculate defaults arguments
+        if (xmin is None) & (ymax is None):
+            tf = osr.CoordinateTransformation(self.srs,target_srs)
+            xll, xur, yll, yur = self.extent
+            xmin, ymax, _ = tf.TransformPoint(xll,yur)
+            xmax, ymin, _ = tf.TransformPoint(xur,yll)
+        if (xres is None) & (yres is None):
+            tf = osr.CoordinateTransformation(self.srs,target_srs)
+            xll, xur, yll, yur = self.extent
+            x0, y0, _ = tf.TransformPoint(xll,yur)
+            x1, y1, _ = tf.TransformPoint(xll+self.xres,yur+self.yres)
+            xres = x1-x0
+            yres = y1-y0
+        if nx is None:
+            nx = int(np.ceil((xmax-xmin)/xres))
+            #nx = self.nx
+        if ny is None:
+            ny = int(np.ceil((ymax-ymin)/np.abs(yres)))
+            #ny = self.ny
+
         # Create an in-memory raster
         mem_drv = gdal.GetDriverByName( 'MEM' )
         target_ds = mem_drv.Create('', nx, ny, 1, dtype)
@@ -816,8 +837,8 @@ class __Raster:
     
         # Set the nodata value
         if nodata != None:
-            for b in range(1,self.ds.RasterCount+1):
-                inBand = self.ds.GetRasterBand(b)
+            for b in range(1,target_ds.RasterCount+1):
+                inBand = target_ds.GetRasterBand(b)
                 inBand.SetNoDataValue(nodata)
     
         # Perform the projection/resampling 
@@ -1012,7 +1033,7 @@ class __Raster:
 
     def intersection(self,filename):
         """ Return coordinates of intersection between this image and another.
-
+        For now, only implemented for images with same projection, but a test is used to check whether this is the case.
         :param filename : path to the second image (or another GeoRaster instance)
         :type filename: str, georaster.__Raster
         
@@ -1022,6 +1043,28 @@ class __Raster:
 
         """
 
+        # Check that both files have the same projection
+        img = SingleBandRaster(filename, load_data=False)
+        code1 = self.srs.GetAuthorityCode(None)  # Get EPSG codes
+        code2 = img.srs.GetAuthorityCode(None)
+
+        if ((code1 is None) or (code2 is None)):  # If code could not be estimated
+            print("Could not identify images projection EPSG, trying with PROJ4")
+            proj1 = self.srs.ExportToProj4()
+            proj2 = img.srs.ExportToProj4()
+            if proj1==proj2:
+                pass
+            else:
+                print("Projections of images seem to be different, case not implemented:\n%s = %s\n%s = %s" %(self.ds_file,proj1,img.ds_file,proj2))
+                return 0
+        else:
+            if code1==code2:
+                pass
+            else:
+                print("Projections of images seem to be different, case not implemented:\n%s = EPSG:%s\n%s = EPSG:%s" %(self.ds_file,proj1,img.ds_file,proj2))
+                return 0
+                
+        
         # Create a polygon of the envelope of the first image
         xmin, xmax, ymin, ymax = self.extent
         wkt = "POLYGON ((%f %f, %f %f, %f %f, %f %f, %f %f))" \
@@ -1029,7 +1072,6 @@ class __Raster:
         poly1 = ogr.CreateGeometryFromWkt(wkt)
 
         # Create a polygon of the envelope of the second image
-        img = SingleBandRaster(filename, load_data=False)
         xmin, xmax, ymin, ymax = img.extent
         wkt = "POLYGON ((%f %f, %f %f, %f %f, %f %f, %f %f))" \
             %(xmin,ymin,xmin,ymax,xmax,ymax,xmax,ymin,xmin,ymin)
@@ -1250,7 +1292,7 @@ class MultiBandRaster(__Raster):
                     for b in self.bands:
 
                         # If first band, create a storage object
-                        if self.r == None:
+                        if self.r is None:
                             (tmp,self.extent) = self.read_single_band_subset(load_data,
                                                                              latlon=latlon,extent=True,band=b,update_info=False, downsampl=downsampl)
                             self.r = np.zeros((tmp.shape[0],tmp.shape[1],
@@ -1292,7 +1334,7 @@ class MultiBandRaster(__Raster):
         """
 
         # Check that more than 1 band has been loaded into memory.
-        if self.bands == None:
+        if self.bands is None:
             raise AttributeError('No data have been loaded.')
         if len(self.bands) == 1:
             raise AttributeError('Only 1 band of data has been loaded.')
@@ -1307,7 +1349,7 @@ class MultiBandRaster(__Raster):
 
 def simple_write_geotiff(outfile,raster,geoTransform,
                          wkt=None,proj4=None,mask=None,dtype=gdal.GDT_Float32, 
-                         nodata_value=-999, metadata=None, compress=None):
+                         nodata_value=-999, metadata=None, options=None):
     """ Save a GeoTIFF.
 
     One of proj4 or wkt are required.
@@ -1329,14 +1371,11 @@ def simple_write_geotiff(outfile,raster,geoTransform,
     :param metadata: Metadata to be stored in the file. Pass a dictionary 
         with {key1:value1, key2:value2...}
     :type metadata: dict
-    :param compress: Compression type to reduce file size. Three lossless 
-        compression exist in GDAL: LZW (high-compression, slow I/O), 
-        Packbits (low compression, high I/O), Deflate (medium compression, 
-        medium I/O). If loss is not a problem, JPEG has also very high 
-        performances. The choice is up to you! See 
-        http://www.digital-geography.com/geotiff-compression-comparison/#.WW1KV47_lP4 
-        for more information.
-    :type compress: str
+    :param options: Additional creation options, see e.g. http://www.gdal.org/frmt_gtiff.html. 
+        Pass a list of key=value ['key1=value1','key2='value2'...]
+        Examples of options are ['COMPRESS=LZW', 'TILED=YES', 'BLOCKXSIZE=256'...]
+        For compressions, see http://www.digital-geography.com/geotiff-compression-comparison/#.WW1KV47_lP4 
+    :type options: list
 
     :returns: True or a GDAL memory raster.
     
@@ -1347,7 +1386,7 @@ def simple_write_geotiff(outfile,raster,geoTransform,
     # Georeferencing sanity checks
     if wkt != None and proj4 != None:
         raise 'InputError: Both wkt and proj4 specified. Only specify one.'
-    if wkt == None and proj4 == None:
+    if wkt is None and proj4 is None:
         raise 'InputError: One of wkt or proj4 need to be specified.'
 
     # Check if the image is multi-band or not. 
@@ -1366,11 +1405,11 @@ def simple_write_geotiff(outfile,raster,geoTransform,
     else:
         driver = gdal.GetDriverByName('MEM')
 
-    if compress==None:
+    if options is None:
         dst_ds = driver.Create(outfile, xdim, ydim, nbands, dtype)
     else:
         dst_ds = driver.Create(outfile, xdim, ydim, nbands, dtype,
-            options=[ 'COMPRESS=%s' %compress ])
+            options=options)
     # Top left x, w-e pixel res, rotation, top left y, rotation, n-s pixel res
     dst_ds.SetGeoTransform(geoTransform)
       
@@ -1395,7 +1434,7 @@ def simple_write_geotiff(outfile,raster,geoTransform,
             dst_ds.GetRasterBand(1).GetMaskBand().WriteArray(mask)
 
     # Add metadata
-    if metadata!=None:
+    if metadata is not None:
         dst_ds.SetMetadata(metadata)
 
     if outfile != 'none':
