@@ -8,7 +8,15 @@ There are two basic types of raster: either a single-band dataset, which you loa
 
 There is also an 'advanced' option where you can load a raster dataset, manually specifying your geo-referencing information. See example below.
 
-# Installation #
+Current release info
+====================
+
+| Name | Downloads | Version | Platforms |
+| --- | --- | --- | --- |
+| [![Conda Recipe](https://img.shields.io/badge/recipe-georaster-green.svg)](https://anaconda.org/conda-forge/georaster) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/georaster.svg)](https://anaconda.org/conda-forge/georaster) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/georaster.svg)](https://anaconda.org/conda-forge/georaster) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/georaster.svg)](https://anaconda.org/conda-forge/georaster) |
+
+
+# Installation from conda-forge #
 
     conda install -c conda-forge georaster
 
