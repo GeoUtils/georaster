@@ -469,19 +469,14 @@ class __Raster:
 
 
     def read_single_band_subset(self,bounds,latlon=False,extent=False,band=1,
-                                update_info=False,downsampl=1):
+                                update=False,downsampl=1):
         """ Return a subset area of the specified band of the dataset.
 
         You may supply coordinates either in the raster's current coordinate \
         system or in lat/lon.
 
-        .. warning:: This does not set the contents of `self.r` to the \
-        data from the band and region requested. 
-
-        .. warning:: When `update_info=True` the geo-referencing information \
-        for this GeoRaster instance will be updated to match the extent of \
-        the area requested in `bounds`. Only do this if you are setting the \
-        data extent of `self.r` to match!
+        .. warning:: By default (when `update=False`), this function does not 
+        update the `Raster` object with the results of this function call.
     
         :param bounds: The corners of the area to read in (xmin, xmax, ymin, ymax)
         :type bounds: tuple
@@ -492,10 +487,8 @@ class __Raster:
         :param extent: If True, also return bounds of subset area in the \
         coordinate system of the image.
         :type extent: boolean
-        :param update_info: If True, set the georeferencing information of \
-        the object to match the requested subset area. You should only set \
-        this to True if you are also saving the array returned by this \
-        function into self.r.
+        :param update: If True, set self. r to the content of the subset area, 
+        and set the georeferencing information of the object to that of the subset area. 
         :type update_info: boolean
 
         :returns: when extent=False, array containing data from the \
@@ -555,7 +548,7 @@ class __Raster:
         top = trans[3] + ypx1*trans[5]
         subset_extent = (left, left + x_offset*trans[1], 
                    top + y_offset*trans[5], top)
-        if update_info == True:
+        if update == True:
             self.nx, self.ny = int(np.ceil(x_offset)),int(np.ceil(y_offset)) #arr.shape
             self.x0 = int(xpx1)
             self.y0 = int(ypx1)
@@ -563,6 +556,7 @@ class __Raster:
             self.xres = self.xres*downsampl
             self.yres = self.yres*downsampl
             self.trans = (left, trans[1], 0, top, 0, trans[5])
+            self.r = arr
         if extent == True:
             return (arr,subset_extent)
         else:
@@ -1070,10 +1064,6 @@ class SingleBandRaster(__Raster):
     r = None
     # Band datatype
     dtype = None
-
-
-
-     
 
 
     def __init__(self,ds_filename,load_data=True,latlon=True,band=1,
