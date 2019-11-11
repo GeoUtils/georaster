@@ -1036,6 +1036,116 @@ class __Raster:
         else:
             return extent
 
+
+
+    def plot(pmin=None, pmax=None, vmin=None, vmax=None, band=1, clabel=None, 
+        title=None, figsize=None, max_size=None, 
+        save=False, dpi=300, nodata=np.nan, **kwargs):
+        """
+
+
+        :param pmin: Minimum percentile of image to plot
+        :param pmax: Maximum percentile of image to plot
+        :param vmin: Minimum value of image to plot
+        :param vmax: Maximum value of image to plot
+        :param band: Band to visualise (default=1)
+        :param clabel: Label to give to colourbar
+        :param title: Title to give to plot
+        :param figsize: Figure size (x, y) in inches
+        :param max_size:
+        :param save: Path and filename to save plot to
+        :param dpi: Dots per inch of saved file
+        :param nodata: no data value
+
+        :returns:
+
+
+        """
+
+        # vmin
+        if vmin is None:
+            vmin = np.nanmin(data)
+        else:
+            try:
+                vmin = float(vmin)
+            except ValueError:   # Case is not a number
+                try:
+                    perc, _ = args.vmin.split('%')
+                    if nodata != None:
+                        vmin = np.nanpercentile(data[data.mask==False],perc)
+                    else:
+                        vmin = np.nanpercentile(data,perc)
+                except ValueError:   # Case no % sign
+                    print("ERROR: vmin must be a float or percentage, currently set to %s" %args.vmin)
+                    sys.exit(1)
+
+        # vmax
+        if args.vmax == 'default':
+            vmax = np.nanmax(data)
+        else:
+            try:
+                vmax = float(args.vmax)
+            except ValueError:   # Case is not a number
+                try:
+                    perc, _ = args.vmax.split('%')
+                    if nodata != None:
+                        vmax = np.nanpercentile(data[data.mask==False],perc)
+                    else:
+                        vmax = np.nanpercentile(data,perc)
+                except ValueError:   # Case no % sign
+                    print("ERROR: vmax must be a float or percentage, currently set to %s" %args.vmax)
+
+
+        # Figsize
+        if args.figsize == 'default':
+            figsize = plt.rcParams['figure.figsize']
+        else:
+            print(eval(args.figsize))
+            print(tuple(eval(args.figsize)))
+            try:
+                figsize = tuple(eval(args.figsize))
+                xfigsize, yfigsize = figsize
+            except:
+                print("ERROR: figsize must be a tuple of size 2, currently set to %s" %args.figsize)
+
+        # dpi
+        if args.dpi == 'default':
+            dpi = plt.rcParams['figure.dpi']
+        else:
+            try:
+                dpi = int(args.dpi)
+            except ValueError:
+                print("ERROR: dpi must be an integer, currently set to %s" %args.dpi)
+
+        ## Plot data ##
+        
+        fig = plt.figure(figsize=figsize)
+
+        # plot
+        plt.imshow(data,extent=(xmin,xmax,ymin,ymax), cmap=cmap, 
+            interpolation='nearest', vmin=vmin, vmax=vmax)
+
+        # colorbar
+        if args.nocb == False:
+            cb = plt.colorbar()
+
+            if args.clabel != '':
+                cb.set_label(args.clabel)
+
+        # title
+        if args.title != '':
+            plt.title(args.title)
+
+        plt.tight_layout()
+
+        # Save
+        if args.save != '':
+            plt.savefig(args.save, dpi=dpi)
+            print("Figure saved to file %s." %args.save)
+        else:
+            print("Figure displayed on screen.")
+            plt.show()
+
         
 
 class SingleBandRaster(__Raster):
