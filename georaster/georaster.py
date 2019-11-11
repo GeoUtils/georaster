@@ -729,42 +729,7 @@ class __Raster:
             Xgeo, Ygeo = self.proj(Xgeo,Ygeo,inverse=True)
 
         return (Xgeo,Ygeo)
-
-
-
-    def get_utm_zone(self):
-        """ 
-        Return UTM zone of raster from GDAL Projection information. 
-
-        This function used to be more complex but is now a wrapper to an OGR
-        Spatial Reference call. It remains maintained for backward 
-        compatibility with dependent scripts.
-
-        :returns: zone
-        :rtype: str
-
-        """
-
-        print('WARNING: This function is deprecated and will be removed in \
-            a future version of GeoRaster. Use georaster.srs.GetUTMZone() \
-            instead.')
-        return self.srs.GetUTMZone()
         
-
-
-    def get_pixel_size(self):
-        """ 
-        Return pixel size of loaded raster. Maintained for backward 
-        compatibility only, use self.xres and self.yres in new projects.
-
-        :returns: xres, yres
-        :rtype: float
-
-        """
-        print('WARNING: This function is deprecated and will be removed in \
-            a future version of GeoRaster. Use georaster.xres and .yres instead.')
-        return self.xres, self.yres
-
 
 
     def reproject(self,target_srs,nx=None,ny=None,xmin=None,ymax=None,
@@ -982,22 +947,6 @@ class __Raster:
         return z_interp
 
     
-    def interp_from_ds(self, x, y, order=1, latlon=False, bands=0):
-        """
-        Interpolate raster at points (x,y). 
-
-        DEPRECATED. Use interp() instead.
-
-        """
-
-        print('WARNING: This interface is deprecated and will disappear in \
-            future versions of GeoRaster. Update your function references \
-            to interp, setting from_ds flag to True.')
-
-        return self.interp(x, y, order=order, latlon=latlon, bands=bands, 
-            from_ds=True)
-
-
 
     def save_geotiff(self,filename, dtype=gdal.GDT_Float32, **kwargs):
         """
