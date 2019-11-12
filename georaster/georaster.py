@@ -1037,22 +1037,29 @@ class __Raster:
 
 
     def intersection(self,filename):
-        """ Return coordinates of intersection between this image and another.
-        For now, only implemented for images with same projection, but a test is used to check whether this is the case.
+        """ 
+        Return coordinates of intersection between this image and another.
+        If the rasters have different projections, the intersection extent is given in self's projection system.
         :param filename : path to the second image (or another GeoRaster instance)
         :type filename: str, georaster.__Raster
         
         :returns: extent of the intersection between the 2 images \
-        (xmin, xmax, ymin, ymax)
+        (xmin, xmax, ymin, ymax) in self's coordinate system.
         :rtype: tuple
-
         """
 
-        # Check that both files have the same projection
+        ## Check if both files have the same projection ##
+        # Get EPSG code of first raster
+        self.srs.AutoIdentifyEPSG()
+        code1 = self.srs.GetAuthorityCode(None)
+
+        # Get EPSG code of 2nd raster
         img = SingleBandRaster(filename, load_data=False)
-        code1 = self.srs.GetAuthorityCode(None)  # Get EPSG codes
+        img.srs.AutoIdentifyEPSG()
         code2 = img.srs.GetAuthorityCode(None)
 
+        # Compare both codes, if not found, use PROJ4 strings
+        same_proj=True
         if ((code1 is None) or (code2 is None)):  # If code could not be estimated
             print("Could not identify images projection EPSG, trying with PROJ4")
             proj1 = self.srs.ExportToProj4()
@@ -1060,28 +1067,33 @@ class __Raster:
             if proj1==proj2:
                 pass
             else:
-                print("Projections of images seem to be different, case not implemented:\n%s = %s\n%s = %s" %(self.ds_file,proj1,img.ds_file,proj2))
-                return 0
+                same_proj=False
         else:
             if code1==code2:
                 pass
             else:
-                print("Projections of images seem to be different, case not implemented:\n%s = EPSG:%s\n%s = EPSG:%s" %(self.ds_file,proj1,img.ds_file,proj2))
-                return 0
+                same_proj=False
                 
-        
+        ## Find envelope of rasters' intersections
         # Create a polygon of the envelope of the first image
         xmin, xmax, ymin, ymax = self.extent
         wkt = "POLYGON ((%f %f, %f %f, %f %f, %f %f, %f %f))" \
             %(xmin,ymin,xmin,ymax,xmax,ymax,xmax,ymin,xmin,ymin)
         poly1 = ogr.CreateGeometryFromWkt(wkt)
-
+        poly1.AssignSpatialReference(self.srs)
+        
         # Create a polygon of the envelope of the second image
         xmin, xmax, ymin, ymax = img.extent
         wkt = "POLYGON ((%f %f, %f %f, %f %f, %f %f, %f %f))" \
             %(xmin,ymin,xmin,ymax,xmax,ymax,xmax,ymin,xmin,ymin)
         poly2 = ogr.CreateGeometryFromWkt(wkt)
+        poly2.AssignSpatialReference(img.srs)
 
+        # If coordinate system is different, reproject poly2 into poly1
+        if same_proj==False:
+            tr = osr.CoordinateTransformation(img.srs,self.srs)
+            poly2.Transform(tr)
+            
         # Compute intersection envelope
         intersect = poly1.Intersection(poly2)
         extent = intersect.GetEnvelope()
