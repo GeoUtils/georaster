@@ -103,6 +103,7 @@ Change history prior to 2016/01/19 is in atedstone/geoutils repo.
 
 import numpy as np
 from scipy import ndimage
+import os
 try:
     from scipy.stats import nanmean
 except ImportError:
@@ -138,6 +139,16 @@ given on http://www.gdal.org/gdal_datamodel.html
 (Xgeo, Ygeo) is the position of the upper-left corner of the cell, so the 
 cell center is located at position (Xpixel+0.5,Ypixel+0.5)
 """
+
+
+
+### Paths to data for testing and tutorial purposes
+
+test_data_path = os.path.join('/', *(__file__.split('/')[:-2]), 'test', 'data')
+test_data_landsat = os.path.join(test_data_path, 'LE7...tif')
+
+
+################################################################################
 
 class __Raster:
     """
@@ -485,13 +496,13 @@ class __Raster:
 
 
     def read_single_band_subset(self,bounds,latlon=False,extent=False,band=1,
-                                update=False,downsampl=1):
+                                update_info=False,downsampl=1):
         """ Return a subset area of the specified band of the dataset.
 
         You may supply coordinates either in the raster's current coordinate \
         system or in lat/lon.
 
-        .. warning:: By default (when `update=False`), this function does not 
+        .. warning:: By default (when `update_info=False`), this function does not 
         update the `Raster` object with the results of this function call.
     
         :param bounds: The corners of the area to read in (xmin, xmax, ymin, ymax)
@@ -503,8 +514,7 @@ class __Raster:
         :param extent: If True, also return bounds of subset area in the \
         coordinate system of the image.
         :type extent: boolean
-        :param update: If True, set self. r to the content of the subset area, 
-        and set the georeferencing information of the object to that of the subset area. 
+        :param update_info: If True, set the georeferencing information of the object to that of the subset area. 
         :type update_info: boolean
 
         :returns: when extent=False, array containing data from the \
@@ -564,7 +574,7 @@ class __Raster:
         top = trans[3] + ypx1*trans[5]
         subset_extent = (left, left + x_offset*trans[1], 
                    top + y_offset*trans[5], top)
-        if update == True:
+        if update_info:
             self.nx, self.ny = int(np.ceil(x_offset)),int(np.ceil(y_offset)) #arr.shape
             self.x0 = int(xpx1)
             self.y0 = int(ypx1)
@@ -572,7 +582,6 @@ class __Raster:
             self.xres = self.xres*downsampl
             self.yres = self.yres*downsampl
             self.trans = (left, trans[1], 0, top, 0, trans[5])
-            self.r = arr
         if extent == True:
             return (arr,subset_extent)
         else:
@@ -1203,11 +1212,16 @@ class SingleBandRaster(__Raster):
 
     Attributes:
         ds_file : filepath and name
+
         ds : GDAL handle to dataset
+
         extent : extent of raster in order understood by basemap, 
                     [xll,xur,yll,yur], in raster coordinates
+
         srs : OSR SpatialReference object
+
         proj : pyproj conversion object raster coordinates<->lat/lon 
+
         r : numpy band of array data
 
 
@@ -1225,14 +1239,17 @@ class SingleBandRaster(__Raster):
 
     def __init__(self,ds_filename,load_data=True,latlon=True,band=1,
         spatial_ref=None,geo_transform=None,downsampl=1):
-        """ Construct object with raster from a single band dataset. 
+        """ Open a single band raster.
         
-        Parameters:
-            ds_filename : filename of the dataset to import
-            load_data : - True, to import the data into obj.r. 
-                        - False, to not load any data.
-                        - tuple (left, right, bottom, top) to load subset; 
-                          obj.extent will be set to reflect subset area.
+        :param ds_filename: filename of the dataset to import
+        :type ds_filename: str
+        
+        :param load_data: If True, to import the data into obj.r.  If False, 
+        do not load any data. Provide tuple (left, right, bottom, top) to load 
+        subset, in which case extent will be set to reflect subset area.
+        :type load_data: 
+
+
             latlon : default True. Only used if load_data=tuple. Set as False
                      if tuple is projected coordinates, True if WGS84.
             band : default 1. Specify GDAL band number to load. If you want to
