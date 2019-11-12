@@ -859,8 +859,6 @@ class __Raster:
             new_raster = MultiBandRaster(target_ds)
         else:
             new_raster = SingleBandRaster(target_ds)
-        band = target_ds.GetRasterBand(1)
-        data = band.ReadAsArray(0, 0, nx, ny)
 
         # Replace no data value
         if new_raster.ds.RasterCount>1:
