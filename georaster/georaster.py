@@ -469,19 +469,14 @@ class __Raster:
 
 
     def read_single_band_subset(self,bounds,latlon=False,extent=False,band=1,
-                                update_info=False,downsampl=1):
+                                update=False,downsampl=1):
         """ Return a subset area of the specified band of the dataset.
 
         You may supply coordinates either in the raster's current coordinate \
         system or in lat/lon.
 
-        .. warning:: This does not set the contents of `self.r` to the \
-        data from the band and region requested. 
-
-        .. warning:: When `update_info=True` the geo-referencing information \
-        for this GeoRaster instance will be updated to match the extent of \
-        the area requested in `bounds`. Only do this if you are setting the \
-        data extent of `self.r` to match!
+        .. warning:: By default (when `update=False`), this function does not 
+        update the `Raster` object with the results of this function call.
     
         :param bounds: The corners of the area to read in (xmin, xmax, ymin, ymax)
         :type bounds: tuple
@@ -492,10 +487,8 @@ class __Raster:
         :param extent: If True, also return bounds of subset area in the \
         coordinate system of the image.
         :type extent: boolean
-        :param update_info: If True, set the georeferencing information of \
-        the object to match the requested subset area. You should only set \
-        this to True if you are also saving the array returned by this \
-        function into self.r.
+        :param update: If True, set self. r to the content of the subset area, 
+        and set the georeferencing information of the object to that of the subset area. 
         :type update_info: boolean
 
         :returns: when extent=False, array containing data from the \
@@ -555,7 +548,7 @@ class __Raster:
         top = trans[3] + ypx1*trans[5]
         subset_extent = (left, left + x_offset*trans[1], 
                    top + y_offset*trans[5], top)
-        if update_info == True:
+        if update == True:
             self.nx, self.ny = int(np.ceil(x_offset)),int(np.ceil(y_offset)) #arr.shape
             self.x0 = int(xpx1)
             self.y0 = int(ypx1)
@@ -563,6 +556,7 @@ class __Raster:
             self.xres = self.xres*downsampl
             self.yres = self.yres*downsampl
             self.trans = (left, trans[1], 0, top, 0, trans[5])
+            self.r = arr
         if extent == True:
             return (arr,subset_extent)
         else:
@@ -729,42 +723,7 @@ class __Raster:
             Xgeo, Ygeo = self.proj(Xgeo,Ygeo,inverse=True)
 
         return (Xgeo,Ygeo)
-
-
-
-    def get_utm_zone(self):
-        """ 
-        Return UTM zone of raster from GDAL Projection information. 
-
-        This function used to be more complex but is now a wrapper to an OGR
-        Spatial Reference call. It remains maintained for backward 
-        compatibility with dependent scripts.
-
-        :returns: zone
-        :rtype: str
-
-        """
-
-        print('WARNING: This function is deprecated and will be removed in \
-            a future version of GeoRaster. Use georaster.srs.GetUTMZone() \
-            instead.')
-        return self.srs.GetUTMZone()
         
-
-
-    def get_pixel_size(self):
-        """ 
-        Return pixel size of loaded raster. Maintained for backward 
-        compatibility only, use self.xres and self.yres in new projects.
-
-        :returns: xres, yres
-        :rtype: float
-
-        """
-        print('WARNING: This function is deprecated and will be removed in \
-            a future version of GeoRaster. Use georaster.xres and .yres instead.')
-        return self.xres, self.yres
-
 
 
     def reproject(self,target_srs,nx=None,ny=None,xmin=None,ymax=None,
@@ -982,22 +941,6 @@ class __Raster:
         return z_interp
 
     
-    def interp_from_ds(self, x, y, order=1, latlon=False, bands=0):
-        """
-        Interpolate raster at points (x,y). 
-
-        DEPRECATED. Use interp() instead.
-
-        """
-
-        print('WARNING: This interface is deprecated and will disappear in \
-            future versions of GeoRaster. Update your function references \
-            to interp, setting from_ds flag to True.')
-
-        return self.interp(x, y, order=order, latlon=latlon, bands=bands, 
-            from_ds=True)
-
-
 
     def save_geotiff(self,filename, dtype=gdal.GDT_Float32, **kwargs):
         """
@@ -1093,6 +1036,116 @@ class __Raster:
         else:
             return extent
 
+
+
+    def plot(pmin=None, pmax=None, vmin=None, vmax=None, band=1, clabel=None, 
+        title=None, figsize=None, max_size=None, 
+        save=False, dpi=300, nodata=np.nan, **kwargs):
+        """
+
+
+        :param pmin: Minimum percentile of image to plot
+        :param pmax: Maximum percentile of image to plot
+        :param vmin: Minimum value of image to plot
+        :param vmax: Maximum value of image to plot
+        :param band: Band to visualise (default=1)
+        :param clabel: Label to give to colourbar
+        :param title: Title to give to plot
+        :param figsize: Figure size (x, y) in inches
+        :param max_size:
+        :param save: Path and filename to save plot to
+        :param dpi: Dots per inch of saved file
+        :param nodata: no data value
+
+        :returns:
+
+
+        """
+
+        # vmin
+        if vmin is None:
+            vmin = np.nanmin(data)
+        else:
+            try:
+                vmin = float(vmin)
+            except ValueError:   # Case is not a number
+                try:
+                    perc, _ = args.vmin.split('%')
+                    if nodata != None:
+                        vmin = np.nanpercentile(data[data.mask==False],perc)
+                    else:
+                        vmin = np.nanpercentile(data,perc)
+                except ValueError:   # Case no % sign
+                    print("ERROR: vmin must be a float or percentage, currently set to %s" %args.vmin)
+                    sys.exit(1)
+
+        # vmax
+        if args.vmax == 'default':
+            vmax = np.nanmax(data)
+        else:
+            try:
+                vmax = float(args.vmax)
+            except ValueError:   # Case is not a number
+                try:
+                    perc, _ = args.vmax.split('%')
+                    if nodata != None:
+                        vmax = np.nanpercentile(data[data.mask==False],perc)
+                    else:
+                        vmax = np.nanpercentile(data,perc)
+                except ValueError:   # Case no % sign
+                    print("ERROR: vmax must be a float or percentage, currently set to %s" %args.vmax)
+
+
+        # Figsize
+        if args.figsize == 'default':
+            figsize = plt.rcParams['figure.figsize']
+        else:
+            print(eval(args.figsize))
+            print(tuple(eval(args.figsize)))
+            try:
+                figsize = tuple(eval(args.figsize))
+                xfigsize, yfigsize = figsize
+            except:
+                print("ERROR: figsize must be a tuple of size 2, currently set to %s" %args.figsize)
+
+        # dpi
+        if args.dpi == 'default':
+            dpi = plt.rcParams['figure.dpi']
+        else:
+            try:
+                dpi = int(args.dpi)
+            except ValueError:
+                print("ERROR: dpi must be an integer, currently set to %s" %args.dpi)
+
+        ## Plot data ##
+        
+        fig = plt.figure(figsize=figsize)
+
+        # plot
+        plt.imshow(data,extent=(xmin,xmax,ymin,ymax), cmap=cmap, 
+            interpolation='nearest', vmin=vmin, vmax=vmax)
+
+        # colorbar
+        if args.nocb == False:
+            cb = plt.colorbar()
+
+            if args.clabel != '':
+                cb.set_label(args.clabel)
+
+        # title
+        if args.title != '':
+            plt.title(args.title)
+
+        plt.tight_layout()
+
+        # Save
+        if args.save != '':
+            plt.savefig(args.save, dpi=dpi)
+            print("Figure saved to file %s." %args.save)
+        else:
+            print("Figure displayed on screen.")
+            plt.show()
+
         
 
 class SingleBandRaster(__Raster):
@@ -1121,10 +1174,6 @@ class SingleBandRaster(__Raster):
     r = None
     # Band datatype
     dtype = None
-
-
-
-     
 
 
     def __init__(self,ds_filename,load_data=True,latlon=True,band=1,
