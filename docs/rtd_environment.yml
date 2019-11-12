@@ -1,5 +1,6 @@
 name: georaster_conda
 dependencies:
+  - python=3.7
   - numpy
   - scipy
   - gdal
