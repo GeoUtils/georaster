@@ -113,10 +113,18 @@ try:
 except ImportError:
     import mpl_toolkits.basemap.pyproj as pyproj
 
+""" Further dependencies, imported if needed:
+
+- matplotlib
+    - Loaded by .plot()
+
+"""
+
 # By default, GDAL does not raise exceptions - enable them
 # See http://trac.osgeo.org/gdal/wiki/PythonGotchas
 gdal.UseExceptions()
 from warnings import warn
+
 
 """
 Information on map -> pixel conversion
@@ -134,17 +142,25 @@ cell center is located at position (Xpixel+0.5,Ypixel+0.5)
 class __Raster:
     """
     Attributes:
-        ds_file : filepath and name
+        ds_file (str) : filepath and name
+
         ds : GDAL handle to dataset
-        extent : extent of raster in order understood by basemap, 
+
+        extent (tuple) : extent of raster in order understood by basemap, 
                     [xll,xur,yll,yur], in raster coordinates
+
         srs : OSR SpatialReference object
+
         proj : pyproj conversion object raster coordinates<->lat/lon 
-        self.nx : x size of the raster. If a subset area of the raster is
+
+        nx : x size of the raster. If a subset area of the raster is
             loaded then nx will correspond to the x size of the subset area.
-        self.ny : y size of the raster. As nx.
-        self.xres, self.yres : pixel sizes in x and y dimensions.
-        self.x0, self.y0 : the offsets in x and y of the loaded raster area. 
+
+        ny : y size of the raster. As nx.
+
+        xres, yres : pixel sizes in x and y dimensions.
+        
+        x0, y0 : the offsets in x and y of the loaded raster area. 
             These will be zero unless a subset area has been loaded.
 
     """      
@@ -1038,113 +1054,144 @@ class __Raster:
 
 
 
-    def plot(pmin=None, pmax=None, vmin=None, vmax=None, band=1, clabel=None, 
-        title=None, figsize=None, max_size=None, 
-        save=False, dpi=300, nodata=np.nan, **kwargs):
-        """
+    def plot(self, band=1, nodata=None,
+        pmin=None, pmax=None, vmin=None, vmax=None, 
+        colorbar=True, clabel=None, 
+        title=None, figsize=None, save=None, dpi=300, 
+        **kwargs):
+        """ Use matplotlib imshow to plot a GeoRaster image.
 
+        With MultiBandRasters, this function currently only supports plotting of
+        a single band, which can be specified with the `band` parameter. It does
+        not support plotting of RGB composites.
 
-        :param pmin: Minimum percentile of image to plot
-        :param pmax: Maximum percentile of image to plot
-        :param vmin: Minimum value of image to plot
-        :param vmax: Maximum value of image to plot
+        Image value bounds can either be chosen automatically, or specified
+        by percentiles or values. Provide only one of vmin or pmin, and only one 
+        of vmax or pmax.
+
         :param band: Band to visualise (default=1)
-        :param clabel: Label to give to colourbar
-        :param title: Title to give to plot
-        :param figsize: Figure size (x, y) in inches
-        :param max_size:
-        :param save: Path and filename to save plot to
-        :param dpi: Dots per inch of saved file
+        :type band: int
         :param nodata: no data value
+        :type nodata: float
+        :param pmin: Minimum percentile of image to plot
+        :type pmin: float
+        :param pmax: Maximum percentile of image to plot
+        :type pmax: float
+        :param vmin: Minimum value of image to plot
+        :type vmin: float
+        :param vmax: Maximum value of image to plot
+        :type vmax: float
+        :param colorbar: If True, plot colorbar, if False, do not.
+        :type colorbar: bool
+        :param clabel: Label to give to colourbar
+        :type clabel: str
+        :param title: Title to give to plot
+        :type title: str
+        :param figsize: Figure size (x, y) in inches
+        :type figsize: tuple
+        :param save: Path and filename to save plot to
+        :type save: str
+        :param dpi: Dots per inch of saved file
+        :type dpi: int
 
-        :returns:
+        **kwargs are passed to matplotlib.plot.imshow function.
 
+        :returns: True on successful execution.
+        :rtype: bool
 
         """
+        
+        import matplotlib.pyplot as plt
 
-        # vmin
-        if vmin is None:
-            vmin = np.nanmin(data)
-        else:
-            try:
-                vmin = float(vmin)
-            except ValueError:   # Case is not a number
-                try:
-                    perc, _ = args.vmin.split('%')
-                    if nodata != None:
-                        vmin = np.nanpercentile(data[data.mask==False],perc)
-                    else:
-                        vmin = np.nanpercentile(data,perc)
-                except ValueError:   # Case no % sign
-                    print("ERROR: vmin must be a float or percentage, currently set to %s" %args.vmin)
-                    sys.exit(1)
+        # Only continue if there is some data loaded to plot!
+        if self.r is None:
+            raise ValueError('No raster data loaded in .r.')
 
-        # vmax
-        if args.vmax == 'default':
-            vmax = np.nanmax(data)
-        else:
-            try:
-                vmax = float(args.vmax)
-            except ValueError:   # Case is not a number
-                try:
-                    perc, _ = args.vmax.split('%')
-                    if nodata != None:
-                        vmax = np.nanpercentile(data[data.mask==False],perc)
-                    else:
-                        vmax = np.nanpercentile(data,perc)
-                except ValueError:   # Case no % sign
-                    print("ERROR: vmax must be a float or percentage, currently set to %s" %args.vmax)
+        # Choose between percentiles and values min/max
+        if (pmin is not None) & (vmin is not None):
+            raise ValueError('Both pmin and vmin provided. Set only one.')
+        if (pmax is not None) & (vmax is not None):
+            raise ValueError('Both pmax and vmax provided. Set only one.')
 
+
+        # default vmin
+        if (vmin is None) & (pmin is None):
+            vmin = np.nanmin(self.r[:,:,band])
+
+        # default vmax
+        if (vmax is None) & (pmax is None):
+            vmax = np.nanmax(self.r[:,:,band])
+
+
+        # Percentile minimum
+        def calc_percentile(data, nodata, perc):
+            if nodata != None:
+                vmin = np.nanpercentile(data[data.mask==False], perc)
+            else:
+                vmin = np.nanpercentile(data, perc)
+            return vmin
+        
+        if pmin is not None:
+            vmin = calc_percentile(self.r[:,:,band], nodata, perc)
+
+        if pmax is not None:
+            vmax = calc_percentile(self.r[:,:,band], nodata, perc)
+        
 
         # Figsize
-        if args.figsize == 'default':
+        if figsize is None:
             figsize = plt.rcParams['figure.figsize']
         else:
-            print(eval(args.figsize))
-            print(tuple(eval(args.figsize)))
+            print(eval(figsize))
+            print(tuple(eval(figsize)))
             try:
-                figsize = tuple(eval(args.figsize))
+                figsize = tuple(eval(figsize))
                 xfigsize, yfigsize = figsize
             except:
-                print("ERROR: figsize must be a tuple of size 2, currently set to %s" %args.figsize)
+                print("ERROR: figsize must be a tuple of size 2, currently set to %s" %figsize)
 
         # dpi
-        if args.dpi == 'default':
+        if dpi is None:
             dpi = plt.rcParams['figure.dpi']
         else:
             try:
-                dpi = int(args.dpi)
+                dpi = int(dpi)
             except ValueError:
-                print("ERROR: dpi must be an integer, currently set to %s" %args.dpi)
+                print("ERROR: dpi must be an integer, currently set to %s" %dpi)
 
-        ## Plot data ##
-        
+
+       
+        ## Plot data    
         fig = plt.figure(figsize=figsize)
 
-        # plot
-        plt.imshow(data,extent=(xmin,xmax,ymin,ymax), cmap=cmap, 
-            interpolation='nearest', vmin=vmin, vmax=vmax)
+        xmin, xmax, ymin, ymax = self.extent
+
+        plt.imshow(self.r[:,:,band], extent=(xmin,xmax,ymin,ymax), 
+            interpolation='nearest', vmin=vmin, vmax=vmax, **kwargs)
 
         # colorbar
-        if args.nocb == False:
+        if colorbar is True:
             cb = plt.colorbar()
 
-            if args.clabel != '':
-                cb.set_label(args.clabel)
+            if clabel is not None:
+                cb.set_label(clabel)
 
         # title
-        if args.title != '':
-            plt.title(args.title)
+        if title is not None:
+            plt.title(title)
 
         plt.tight_layout()
 
         # Save
-        if args.save != '':
-            plt.savefig(args.save, dpi=dpi)
-            print("Figure saved to file %s." %args.save)
+        if save is not None:
+            plt.savefig(save, dpi=dpi)
+            print("Figure saved to file %s." %save)
         else:
-            print("Figure displayed on screen.")
             plt.show()
+
+        return True
+
+
 
         
 
