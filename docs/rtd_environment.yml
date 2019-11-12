@@ -1,0 +1,8 @@
+name: georaster_conda
+dependencies:
+  - numpy
+  - scipy
+  - gdal
+  - pyproj
+channels:
+  - conda-forge
