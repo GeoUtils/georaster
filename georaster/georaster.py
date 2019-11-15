@@ -145,7 +145,7 @@ cell center is located at position (Xpixel+0.5,Ypixel+0.5)
 ### Paths to data for testing and tutorial purposes
 
 test_data_path = os.path.join('/', *(__file__.split('/')[:-2]), 'test', 'data')
-test_data_landsat = os.path.join(test_data_path, 'LE7...tif')
+
 
 
 ################################################################################
