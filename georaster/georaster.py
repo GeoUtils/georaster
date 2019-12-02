@@ -1002,7 +1002,7 @@ class __Raster:
         # Compare both codes, if not found, use PROJ4 strings
         same_proj=True
         if ((code1 is None) or (code2 is None)):  # If code could not be estimated
-            print("Could not identify images projection EPSG, trying with PROJ4")
+            warn("Could not identify images projection EPSG, trying with PROJ4")
             proj1 = self.srs.ExportToProj4()
             proj2 = img.srs.ExportToProj4()
             if proj1==proj2:
@@ -1041,7 +1041,7 @@ class __Raster:
 
         # check that intersection is not void
         if intersect.GetArea()==0:
-            print('Warning: Intersection is void')
+            warn('Warning: Intersection is void')
             return 0
         else:
             return extent
