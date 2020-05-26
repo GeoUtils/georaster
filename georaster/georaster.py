@@ -384,7 +384,8 @@ class __Raster:
 
         """
         if self.proj != None:
-            xll,xur,yll,yur = self.get_extent_latlon()
+            xll,yll = self.proj(self.extent[0], self.extent[2], inverse=True)
+            xur,yur = self.proj(self.extent[1], self.extent[3], inverse=True)
         else:
             xll,xur,yll,yur = self.extent
 
