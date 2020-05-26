@@ -14,6 +14,15 @@ GeoRaster continues to be maintained but is no longer actively developed with ne
 
 http://georaster.readthedocs.io
 
+
+# Current release info #
+====================
+
+| Name | Downloads | Version | Platforms |
+| --- | --- | --- | --- |
+| [![Conda Recipe](https://img.shields.io/badge/recipe-georaster-green.svg)](https://anaconda.org/conda-forge/georaster) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/georaster.svg)](https://anaconda.org/conda-forge/georaster) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/georaster.svg)](https://anaconda.org/conda-forge/georaster) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/georaster.svg)](https://anaconda.org/conda-forge/georaster) |
+
+
 # Installation #
 
 Please install georaster into a virtual environment (e.g. conda) so that its requirements don't cause problems with your system's Python installation.
