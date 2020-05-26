@@ -2,20 +2,38 @@
 
 This package makes it easy to load, query and save geographic raster datasets in the Python programming language. The package uses Geospatial Data Abstraction Library (GDAL, http://www.gdal.org/) bindings, and so in a single command can import any geo-referenced dataset that is understood by GDAL (http://www.gdal.org/formats_list.html), complete with all geo-referencing information and various helper functions.
 
-GeoRaster is compatible with Python 2.4-3.x. It requires GDAL and its Python bindings to be installed in your environment.
+GeoRaster is compatible with Python 2.4-3.x. 
 
 There are two basic types of raster: either a single-band dataset, which you load into a `SingleBandRaster` object, or a dataset containing multiple bands to be loaded, which you load into a `MultiBandRaster` object.
 
 There is also an 'advanced' option where you can load a raster dataset, manually specifying your geo-referencing information. See example below.
 
-# Installation #
-
-    conda install -c conda-forge georaster
-
+GeoRaster continues to be maintained but is no longer actively developed with new features. [Rasterio](https://rasterio.readthedocs.io/) is a good alternative for many tasks. 
 
 # Full Documentation #
 
 http://georaster.readthedocs.io
+
+# Installation #
+
+Please install georaster into a virtual environment (e.g. conda) so that its requirements don't cause problems with your system's Python installation.
+
+## Conda ##
+
+This is the preferred method of installation. It will resolve all the complex dependencies associated with GDAL automatically. 
+
+    conda install -c conda-forge georaster
+
+
+## pip ##
+
+Installation via pip requires your system to already have a working GDAL installation. We do not recommend this option - use conda where possible.
+
+    pip install georaster
+
+
+
+
 
 
 # Examples #
