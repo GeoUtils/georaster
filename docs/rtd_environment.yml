@@ -1,10 +1,10 @@
 name: georaster_conda
 dependencies:
-  - python=3.7
+  - python>=3.7
   - numpy
   - scipy
   - gdal
   - pyproj
-  - libgfortran==1
+  - libgfortran>=1
 channels:
   - conda-forge
