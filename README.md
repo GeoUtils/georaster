@@ -2,13 +2,20 @@
 
 This package makes it easy to load, query and save geographic raster datasets in the Python programming language. The package uses Geospatial Data Abstraction Library (GDAL, http://www.gdal.org/) bindings, and so in a single command can import any geo-referenced dataset that is understood by GDAL (http://www.gdal.org/formats_list.html), complete with all geo-referencing information and various helper functions.
 
-GeoRaster is compatible with Python 2.4-3.x. It requires GDAL and its Python bindings to be installed in your environment.
+GeoRaster is compatible with Python 2.4-3.x. 
 
 There are two basic types of raster: either a single-band dataset, which you load into a `SingleBandRaster` object, or a dataset containing multiple bands to be loaded, which you load into a `MultiBandRaster` object.
 
 There is also an 'advanced' option where you can load a raster dataset, manually specifying your geo-referencing information. See example below.
 
-Current release info
+GeoRaster continues to be maintained but is no longer actively developed with new features. [Rasterio](https://rasterio.readthedocs.io/) is a good alternative for many tasks. 
+
+# Full Documentation #
+
+http://georaster.readthedocs.io
+
+
+# Current release info #
 ====================
 
 | Name | Downloads | Version | Platforms |
@@ -16,14 +23,26 @@ Current release info
 | [![Conda Recipe](https://img.shields.io/badge/recipe-georaster-green.svg)](https://anaconda.org/conda-forge/georaster) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/georaster.svg)](https://anaconda.org/conda-forge/georaster) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/georaster.svg)](https://anaconda.org/conda-forge/georaster) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/georaster.svg)](https://anaconda.org/conda-forge/georaster) |
 
 
-# Installation from conda-forge #
+# Installation #
+
+Please install georaster into a virtual environment (e.g. conda) so that its requirements don't cause problems with your system's Python installation.
+
+## Conda ##
+
+This is the preferred method of installation. It will resolve all the complex dependencies associated with GDAL automatically. 
 
     conda install -c conda-forge georaster
 
 
-# Full Documentation #
+## pip ##
 
-http://georaster.readthedocs.io
+Installation via pip requires your system to already have a working GDAL installation. We do not recommend this option - use conda where possible.
+
+    pip install georaster
+
+
+
+
 
 
 # Examples #
@@ -126,19 +145,9 @@ Once an image is loaded, the object provides the following attributes:
 - Raster.coordinates() : return projected or geographic coordinates of the whole image (or, with optional arguments, a subset of the image)
 
 
-## Documentation
-
-Official documentation will shortly be hosted on ReadTheDocs.
-
-
 ## Get in touch
 
 * Report bugs, suggest features or view the code on GitHub.
-
-
-## History
-
-GeoRaster was initially developed by Andrew Tedstone in 2013 whilst at the University of Edinburgh. Andrew Tedstone and Amaury Dehecq continue to develop and maintain the package. GeoRaster was made publicly available in January 2016.
 
 
 ## License
