@@ -1029,9 +1029,12 @@ class __Raster:
             %(xmin,ymin,xmin,ymax,xmax,ymax,xmax,ymin,xmin,ymin)
         poly2 = ogr.CreateGeometryFromWkt(wkt)
         poly2.AssignSpatialReference(img.srs)
-
+        
         # If coordinate system is different, reproject poly2 into poly1
         if same_proj==False:
+            # Since GDAL 3.0, WGS84 uses lat/long rather than the opposite, which causes issue. This ensures that both SRS will use the long/lat order.
+            self.srs.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
+            img.srs.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
             tr = osr.CoordinateTransformation(img.srs,self.srs)
             poly2.Transform(tr)
             
