@@ -912,7 +912,7 @@ class __Raster:
         xi, yi = self.coord_to_px(x, y, latlon=latlon, rounded=False)
 
         # Case coordinates are not an array
-        if np.rank(xi) < 1:
+        if np.ndim(xi) < 1:
             xi = np.array([xi,])
             yi = np.array([yi,])
 
